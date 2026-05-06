@@ -2,47 +2,62 @@
 
 **Catch broken game localization files before your players do.**
 
-LocaLint is a local Streamlit web app for indie game developers working with CSV or JSON localization tables for engines and platforms like Godot, Unity, Steam, and itch.io.
+LocaLint is a local Python + Streamlit app that helps indie game developers check CSV and JSON localization files before release.
 
-Upload a localization file, choose your source language, and get a clear QA report for missing translations, broken placeholders, duplicate keys, UI overflow risks, suspicious unchanged strings, whitespace issues, punctuation drift, and line break mismatches.
+It detects missing translations, broken placeholders, duplicate keys, suspicious unchanged strings, UI length risks, whitespace issues, punctuation drift, line break mismatches, and encoding problems.
 
 No login.  
 No database.  
 No paid APIs.  
-No cloud upload required.
+No cloud upload required.  
+Your localization files stay on your machine.
 
 ---
 
 ## Why LocaLint?
 
-Localization bugs are easy to miss because they often hide in data files instead of code.
+Localization bugs often hide in data files instead of code.
 
-A single missing `{count}`, duplicate key, or oversized button label can break a quest screen, HUD, menu, store page, or release build.
+A single missing `{count}`, renamed placeholder, duplicated key, or oversized button label can quietly break a menu, HUD, quest screen, dialogue line, or release build.
 
-LocaLint gives small teams a quick pre-release localization QA check before shipping.
+LocaLint gives small teams a fast pre-release localization QA pass before players discover those issues.
+
+It is not a translation platform.  
+It does not generate translations.  
+It checks whether your existing localization files are structurally safe, consistent, and ready to review.
+
+---
+
+## Who Is It For?
+
+LocaLint is built for:
+
+- Indie game developers
+- Game jam teams
+- Godot developers using CSV-style translation tables
+- Unity developers working with exported localization tables
+- Small localization teams
+- Steam and itch.io developers preparing multilingual releases
+- Developers who want a quick local QA check before sending files to translators or shipping a build
+
+LocaLint currently focuses on exported CSV and JSON localization data, not native engine plugin integration.
 
 ---
 
 ## Features
 
 - CSV localization tables with a `key` column and locale columns
-- JSON flat dictionaries shaped like:
-
-```json
-{
-  "START_GAME": {
-    "en": "Start Game",
-    "tr": "Oyuna Başla"
-  }
-}
-```
-
+- Flat JSON localization dictionaries
 - Automatic language detection
-- Source language selector, defaulting to `en` when present
+- Source language selector, defaulting to `en` when available
 - Toggleable QA checks
-- Severity filters, locale filters, and key search
+- Severity levels: `CRITICAL`, `WARNING`, and `INFO`
+- Severity, locale, and key filters
+- Searchable issue table
+- Prioritized next-fix suggestions
+- File preview before review
 - Report downloads as CSV and Markdown
-- Cleaned summary downloads as Markdown or HTML
+- Clean summary downloads as Markdown or HTML
 - Built-in broken sample file for demos
 
 ---
@@ -51,22 +66,65 @@ LocaLint gives small teams a quick pre-release localization QA check before ship
 
 LocaLint currently detects:
 
-- Missing translations
-- Placeholder mismatches
-- Duplicate keys
-- Empty or invalid keys
-- Suspicious unchanged strings
-- Length expansion and possible UI overflow risks
-- Line break mismatches
-- Leading or trailing whitespace
-- Punctuation drift
-- CSV encoding / UTF-8 BOM warnings
+| Check | What it catches |
+|---|---|
+| Missing translations | Empty target-language cells |
+| Placeholder mismatches | Missing or extra `{name}`, `{count}`, `%s`, `%d`, tags, and similar tokens |
+| Duplicate keys | Repeated localization keys |
+| Empty or invalid keys | Blank keys or keys with suspicious formatting |
+| Suspicious unchanged strings | Target text that appears to be copied from the source |
+| Length expansion risk | Translations that may overflow UI labels, buttons, menus, or HUD elements |
+| Line break mismatches | Source and target strings with different line break structure |
+| Leading/trailing whitespace | Accidental spaces before or after text |
+| Punctuation drift | Changed or missing `?`, `!`, `:`, or similar ending punctuation |
+| CSV encoding / BOM warnings | Potential UTF-8 BOM issues, especially relevant for some CSV workflows |
 
 Severity levels:
 
-- **CRITICAL**: likely to break localization or release quality
-- **WARNING**: should be reviewed before shipping
-- **INFO**: cleanup or consistency improvement
+- **CRITICAL**: likely to break localization quality or runtime formatting
+- **WARNING**: should be reviewed before release
+- **INFO**: cleanup, formatting, or consistency improvement
+
+---
+
+## Supported Input Formats
+
+### CSV
+
+Example:
+
+```csv
+key,en,tr
+START_GAME,Start Game,Oyuna Başla
+EXIT,Exit,
+COINS,You have {count} coins,{count} jetonun var
+PLAYER,Player: {name},Oyuncu:
+SETTINGS,Settings,Ayarlar
+```
+
+LocaLint reports:
+
+- `EXIT` has a missing Turkish translation
+- `PLAYER` is missing the `{name}` placeholder in Turkish
+- The file receives a localization health score
+- The developer gets a prioritized fix list
+
+### JSON
+
+Example:
+
+```json
+{
+  "START_GAME": {
+    "en": "Start Game",
+    "tr": "Oyuna Başla"
+  },
+  "COINS": {
+    "en": "You have {count} coins",
+    "tr": "{count} jetonun var"
+  }
+}
+```
 
 ---
 
@@ -87,7 +145,7 @@ python -m venv .venv
 
 Install dependencies:
 
-### Windows
+### Windows PowerShell
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
@@ -100,7 +158,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Or with `uv` on Windows:
+### Windows with uv
 
 ```powershell
 uv venv .venv
@@ -111,7 +169,7 @@ uv pip install --python .\.venv\Scripts\python.exe -r requirements.txt
 
 ## Run
 
-### Windows
+### Windows PowerShell
 
 ```powershell
 .\.venv\Scripts\python.exe -m streamlit run app.py
@@ -142,7 +200,7 @@ http://localhost:8501
 
 ## Test
 
-### Windows
+### Windows PowerShell
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest
@@ -173,29 +231,11 @@ Last local verification:
 
 The `sample_data/` folder includes:
 
-- `godot_sample.csv`: a small clean Godot-style CSV
+- `godot_sample.csv`: a small clean Godot-style CSV file
 - `broken_sample.csv`: a demo file with missing translations, placeholder mismatches, duplicate keys, long target text, unchanged target text, whitespace issues, line break mismatches, punctuation drift, and an invalid key
 - `sample.json`: a flat JSON localization dictionary
 
----
-
-## Example CSV
-
-```csv
-key,en,tr
-START_GAME,Start Game,Oyuna Başla
-EXIT,Exit,
-COINS,You have {count} coins,{count} jetonun var
-PLAYER,Player: {name},Oyuncu:
-SETTINGS,Settings,Ayarlar
-```
-
-LocaLint reports:
-
-- `EXIT` has a missing Turkish translation
-- `PLAYER` is missing the `{name}` placeholder in Turkish
-- The file receives a localization health score
-- The developer gets a prioritized fix list
+The built-in broken sample is useful for quickly testing the app and demonstrating the report output.
 
 ---
 
@@ -203,27 +243,31 @@ LocaLint reports:
 
 ### Overview
 
-Shows total keys, detected languages, total issues, severity counts, and a 0-100 health score.
+Shows total keys, detected languages, total issues, severity counts, and a 0-100 localization health score.
 
 ### Issues
 
-Displays a color-coded issue report with filters for severity, locale, and key search.
+Displays a filtered QA issue report with severity labels, affected keys, locales, messages, suggestions, source text, and target text.
 
 ### File Preview
 
-Shows the uploaded localization table before analysis.
+Shows the uploaded localization table before or after analysis.
 
 ### Export
 
-Generates CSV, Markdown, and HTML summaries for sharing with translators or developers.
+Generates CSV, Markdown, and HTML summaries that can be shared with translators, developers, or teammates.
 
 ### Validation Notes
 
-Includes target users, positioning notes, validation questions, and outreach ideas for Godot, Unity, Steam, and itch.io indie developers.
+Includes target users, positioning notes, validation questions, and outreach ideas for indie game development communities.
 
 ---
 
 ## MVP Limitations
+
+LocaLint is an MVP and intentionally keeps its scope narrow.
+
+Current limitations:
 
 - `.po` parsing is currently a TODO placeholder
 - No batch ZIP upload yet
@@ -237,7 +281,7 @@ Includes target users, positioning notes, validation questions, and outreach ide
 
 ## Validation Plan
 
-The fastest validation path is to share LocaLint with Godot, Unity, Steam, and itch.io developers who are close to release and ask them to test it on real localization files.
+The fastest validation path is to share LocaLint with developers who are close to releasing a localized game and ask them to test it on real localization files.
 
 Useful validation questions:
 
@@ -247,6 +291,7 @@ Useful validation questions:
 - Would batch checking multiple files save time?
 - Which engine workflow matters most: Godot, Unity, Unreal, or generic CSV/JSON?
 - Are the severity levels useful, or should they be adjusted?
+- Which check would make this more useful in a real release pipeline?
 
 ---
 
@@ -261,8 +306,9 @@ Planned improvements:
 - Unreal `.po` localization support
 - Glossary consistency checks
 - Steam store localization checker
-- Screenshot-based text overflow prediction
+- Screenshot-based UI overflow prediction
 - Public hosted demo
+- Optional CI workflow for automated tests
 
 ---
 
@@ -278,11 +324,13 @@ Planned improvements:
 
 ## Project Status
 
-LocaLint is an MVP.
+LocaLint is an early MVP.
 
 It is not a translation platform.  
 It does not generate translations.  
 It focuses on localization QA: finding broken or risky localization entries before release.
+
+The current goal is to validate whether indie developers find this kind of local QA tool useful in real game localization workflows.
 
 ---
 
