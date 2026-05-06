@@ -1,0 +1,14 @@
+key,en,tr,es
+START_GAME,Start Game,Oyuna Basla,Iniciar juego
+COINS,You have {count} coins,{count} jetonun var,Tienes monedas
+PLAYER_NAME,Player: {name},Oyuncu:,Jugador: {name}
+DUPLICATE,Quit,Cikis,Salir
+DUPLICATE,Quit Game,Oyundan Cik,Salir del juego
+LONG_LABEL,Open inventory,Envanterini acmak icin lutfen bu cok uzun ve ekrani tasirabilecek dugme metnini kullan,Open inventory
+WHITESPACE,Settings, Ayarlar ,Configuracion
+LINE_BREAK,"Line one
+Line two",Satir bir,"Linea uno
+Linea dos"
+QUESTION,Continue?,Devam,Continuar?
+BAD KEY,Invalid key,Gecersiz anahtar,Clave invalida
+EMPTY_ES,New Game,Yeni Oyun,

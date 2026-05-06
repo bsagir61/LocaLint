@@ -1,0 +1,17 @@
+{
+  "START_GAME": {
+    "en": "Start Game",
+    "tr": "Oyuna Basla",
+    "es": "Iniciar juego"
+  },
+  "COINS": {
+    "en": "You have {count} coins",
+    "tr": "{count} jetonun var",
+    "es": "Tienes {count} monedas"
+  },
+  "PLAYER_NAME": {
+    "en": "Player: {name}",
+    "tr": "Oyuncu:",
+    "es": "Jugador: {name}"
+  }
+}

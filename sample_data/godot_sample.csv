@@ -1,0 +1,5 @@
+key,en,tr,es
+START_GAME,Start Game,Oyuna Basla,Iniciar juego
+COINS,You have {count} coins,{count} jetonun var,Tienes {count} monedas
+PLAYER_NAME,Player: {name},Oyuncu: {name},Jugador: {name}
+SETTINGS_AUDIO,Audio Settings,Ses Ayarlari,Ajustes de audio
