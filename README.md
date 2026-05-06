@@ -79,15 +79,30 @@ git clone https://github.com/bsagir61/LocaLint.git
 cd LocaLint
 ```
 
-Install dependencies:
+Create a virtual environment:
 
 ```bash
+python -m venv .venv
+```
+
+Install dependencies:
+
+### Windows
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+### macOS / Linux
+
+```bash
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
 Or with `uv` on Windows:
 
-```bash
+```powershell
 uv venv .venv
 uv pip install --python .\.venv\Scripts\python.exe -r requirements.txt
 ```
@@ -95,6 +110,21 @@ uv pip install --python .\.venv\Scripts\python.exe -r requirements.txt
 ---
 
 ## Run
+
+### Windows
+
+```powershell
+.\.venv\Scripts\python.exe -m streamlit run app.py
+```
+
+### macOS / Linux
+
+```bash
+source .venv/bin/activate
+streamlit run app.py
+```
+
+Or, if your virtual environment is already activated:
 
 ```bash
 streamlit run app.py
@@ -112,11 +142,26 @@ http://localhost:8501
 
 ## Test
 
+### Windows
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest
+```
+
+### macOS / Linux
+
+```bash
+source .venv/bin/activate
+pytest
+```
+
+Or, if your virtual environment is already activated:
+
 ```bash
 pytest
 ```
 
-Current verification:
+Last local verification:
 
 ```text
 10 passed
