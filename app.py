@@ -19,6 +19,7 @@ from localint.report import (
 
 ROOT = Path(__file__).parent
 SAMPLE_PATH = ROOT / "sample_data" / "broken_sample.csv"
+REPOSITORY_URL = "https://github.com/bsagir61/LocaLint"
 
 SEVERITY_ORDER = {"CRITICAL": 0, "WARNING": 1, "INFO": 2}
 SEVERITY_META = {
@@ -98,6 +99,15 @@ if "load_demo_sample" not in st.session_state:
 
 with st.sidebar:
     st.header("QA Setup")
+    st.markdown(
+        """
+        **CSV/JSON localization QA**
+
+        Runs locally. No cloud upload. No login. Standalone tool, not a Godot plugin yet.
+        """
+    )
+    st.link_button("GitHub repository", REPOSITORY_URL, use_container_width=True)
+    st.divider()
     upload = st.file_uploader("Upload CSV or JSON", type=["csv", "json", "po"])
     if st.button("Load Demo Sample", use_container_width=True, type="primary"):
         st.session_state.load_demo_sample = True
@@ -135,7 +145,7 @@ if loaded is None:
         """
         <div class="hero-strip">
           <strong>Start with a real file or the demo sample.</strong><br>
-          <span class="muted">LocaLint checks CSV/JSON localization tables locally and turns risky strings into a prioritized QA report.</span>
+          <span class="muted">LocaLint checks CSV/JSON localization tables locally. No login, no cloud upload, no AI API.</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -151,15 +161,28 @@ try:
     table = parse_upload(filename, data)
 except ParserError as exc:
     st.error(str(exc))
+    st.info("Tip: use a CSV with a key column and at least one language column, or a JSON object shaped like {'KEY': {'en': 'Text'}}.")
     st.stop()
 
 if not table.languages:
-    st.error("No locale columns were detected.")
+    st.error("No language columns were detected. Add at least one locale column such as en, tr, or es.")
     st.stop()
 
 default_source_index = table.languages.index("en") if "en" in table.languages else 0
 with st.sidebar:
     source_language = st.selectbox("Source language", options=table.languages, index=default_source_index)
+
+if source_language not in table.languages:
+    st.error(f"Source language '{source_language}' was not found in this file.")
+    st.stop()
+
+target_languages = table.target_languages(source_language)
+if not target_languages:
+    st.warning("No target languages are available for this source language. Add another locale column to run target QA checks.")
+
+all_translation_values = [value for row in table.rows for value in row.translations.values()]
+if all_translation_values and all(not value.strip() for value in all_translation_values):
+    st.warning("All translation cells appear to be empty. LocaLint can still preview the file, but there is no text to QA yet.")
 
 issues = run_checks(
     table,
@@ -201,7 +224,7 @@ with overview_tab:
     st.progress(int(summary["health_score"]) / 100)
     st.write(f"**Source file:** `{filename}`")
     st.write(f"**Detected languages:** {', '.join(table.languages)}")
-    st.write(f"**Target languages:** {', '.join(table.target_languages(source_language)) or 'None'}")
+    st.write(f"**Target languages:** {', '.join(target_languages) or 'None'}")
 
     if summary["critical_issues"]:
         st.error("Critical localization issues need attention before release.")
