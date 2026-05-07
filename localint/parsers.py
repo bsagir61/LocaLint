@@ -27,10 +27,15 @@ def parse_upload(filename: str, data: bytes) -> LocalizationTable:
         return parse_json(data, source_name=filename)
     if suffix == ".po":
         return parse_po(data, source_name=filename)
-    raise ParserError("Unsupported file type. Upload a .csv or .json file.")
+    raise ParserError("Unsupported file type. Upload a CSV or JSON localization file.")
 
 
 def parse_csv(data: bytes, source_name: str = "uploaded.csv") -> LocalizationTable:
+    if not data or not data.strip():
+        raise ParserError(
+            "This CSV file is empty. Upload a CSV with a key column and at least one language column."
+        )
+
     warnings: list[str] = []
     if data.startswith(UTF8_BOM):
         warnings.append(
@@ -46,15 +51,27 @@ def parse_csv(data: bytes, source_name: str = "uploaded.csv") -> LocalizationTab
             na_filter=False,
         )
     except Exception as exc:  # pragma: no cover - pandas error messages vary
-        raise ParserError(f"Could not parse CSV: {exc}") from exc
-
-    if frame.empty and not list(frame.columns):
-        raise ParserError("CSV is empty.")
+        raise ParserError(
+            "Could not read this CSV file. Please check that it has a key column and at least one language column."
+        ) from exc
 
     columns = [str(column).strip() for column in frame.columns]
     frame.columns = columns
+    if not columns:
+        raise ParserError(
+            "Could not read this CSV file. Please check that it has a key column and at least one language column."
+        )
+
     key_column = "key" if "key" in columns else columns[0]
+    if not key_column or key_column.lower().startswith("unnamed:"):
+        raise ParserError("Could not find a usable key column. Add a 'key' column as the first column.")
+
     languages = [column for column in columns if column != key_column]
+    if not languages:
+        raise ParserError("CSV needs at least one language column after the key column, such as en or tr.")
+
+    if frame.empty:
+        raise ParserError("This CSV has headers but no rows. Add at least one localization key to check.")
 
     rows: list[LocalizationRow] = []
     for index, record in frame.iterrows():
@@ -75,19 +92,30 @@ def parse_csv(data: bytes, source_name: str = "uploaded.csv") -> LocalizationTab
 
 
 def parse_json(data: bytes, source_name: str = "uploaded.json") -> LocalizationTable:
+    if not data or not data.strip():
+        raise ParserError(
+            "This JSON file is empty. Upload a flat object like {'START_GAME': {'en': 'Start Game'}}."
+        )
+
     try:
         payload = json.loads(data.decode("utf-8-sig"))
     except Exception as exc:  # pragma: no cover - JSON error messages vary
-        raise ParserError(f"Could not parse JSON: {exc}") from exc
+        raise ParserError(
+            "Could not read this JSON file. Please check that it is valid JSON and uses the supported flat dictionary shape."
+        ) from exc
 
     if not isinstance(payload, dict):
         raise ParserError("JSON must be a flat object where each key maps to locale values.")
+    if not payload:
+        raise ParserError("JSON has no localization entries. Add at least one key with locale values.")
 
     languages: list[str] = []
     rows: list[LocalizationRow] = []
     for key, locale_values in payload.items():
         if not isinstance(locale_values, dict):
             raise ParserError("JSON values must be objects like {'en': 'Start Game', 'tr': 'Oyuna Basla'}.")
+        if not locale_values:
+            raise ParserError(f"JSON key '{key}' has no locale values. Add at least one language entry.")
         translations: dict[str, str] = {}
         for locale, text in locale_values.items():
             locale_name = str(locale)
@@ -95,6 +123,9 @@ def parse_json(data: bytes, source_name: str = "uploaded.json") -> LocalizationT
             if locale_name not in languages:
                 languages.append(locale_name)
         rows.append(LocalizationRow(key=str(key), translations=translations))
+
+    if not languages:
+        raise ParserError("JSON needs at least one language code, such as en or tr.")
 
     return LocalizationTable(rows=rows, languages=languages, source_name=source_name)
 
