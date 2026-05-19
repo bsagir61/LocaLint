@@ -2,37 +2,38 @@
 
 **Local-first QA for CSV/JSON localization files.**
 
-LocaLint helps catch broken localization files before they reach a build.
+LocaLint checks localization files before release and catches the kinds of mistakes that usually slip through quietly:
 
-It checks for missing translations, broken placeholders, duplicate keys, unchanged strings, long UI text, whitespace issues, punctuation drift, line break mismatches, and encoding warnings.
+- missing translations
+- broken placeholders
+- duplicate keys
+- unchanged target strings
+- long UI text
+- whitespace issues
+- punctuation drift
+- line break mismatches
+- encoding warnings
 
-It runs locally.
+It runs on your machine. Files are not uploaded anywhere.
 
 No login.  
 No cloud upload.  
 No database.  
-No AI API.  
 No telemetry.  
-Your files stay on your machine.
+No AI API.
 
 ---
 
-## Why?
+## Why this exists
 
-Localization bugs are easy to miss because they often hide in data files.
+Localization files look simple until they break something.
 
 A missing `{count}` can break a runtime string.  
-A duplicated key can override a translation.  
+A duplicate key can override a translation.  
 A long translated label can overflow a button.  
-A line can stay untranslated until release.
+A line can stay untranslated until someone notices it in a build.
 
-LocaLint is a pre-release check for those problems.
-
-It is not a translation generator.  
-It does not use AI APIs.  
-It checks existing localization files for release-risk issues.
-
-LocaLint is a pre-release check for those problems.
+LocaLint is a quick check before that happens.
 
 It does not translate text.  
 It checks existing localization files for release-risk issues.
@@ -41,13 +42,13 @@ It checks existing localization files for release-risk issues.
 
 ## What it supports
 
-LocaLint currently supports:
+LocaLint currently works with:
 
 - CSV localization tables
 - JSON localization dictionaries
-- Streamlit web UI
-- CLI mode
-- Text, Markdown, JSON, and CSV reports
+- a Streamlit web UI
+- a command-line interface
+- text, Markdown, JSON, and CSV reports
 
 It was built with game localization workflows in mind, but the checks are generic enough for other CSV/JSON localization files too.
 
@@ -57,7 +58,7 @@ LocaLint is not a native Godot, Unity, or Unreal plugin yet.
 
 ## Quick Start
 
-Choose a writable folder first, such as Desktop or Documents.
+Pick a normal writable folder first, such as Desktop or Documents.
 
 ### Windows PowerShell
 
@@ -90,9 +91,9 @@ http://localhost:8501
 
 ---
 
-## Windows Launcher
+## Windows launcher
 
-On Windows, you can also start the app with:
+On Windows, you can also start the app by double-clicking:
 
 ```text
 run-localint-windows.bat
@@ -102,15 +103,15 @@ The launcher creates the virtual environment if needed, installs dependencies, a
 
 ---
 
-## CLI Usage
+## CLI usage
 
-Run a basic scan:
+Basic scan:
 
 ```bash
 python -m localint.cli sample_data/broken_sample.csv --source en
 ```
 
-Limit printed issues:
+Show fewer issues in the terminal:
 
 ```bash
 python -m localint.cli sample_data/broken_sample.csv --source en --max-issues 5
@@ -134,7 +135,7 @@ Export CSV:
 python -m localint.cli sample_data/broken_sample.csv --source en --format csv --out report.csv
 ```
 
-Use it in stricter workflows:
+Fail when critical issues are found:
 
 ```bash
 python -m localint.cli sample_data/broken_sample.csv --source en --fail-on-critical
@@ -148,11 +149,11 @@ python -m localint.cli --version
 
 ---
 
-## CLI Exit Codes
+## CLI exit codes
 
-- `0` — scan completed normally
-- `1` — critical issues found with `--fail-on-critical`
-- `2` — invalid input, parsing error, unsupported file, or usage error
+- `0` means the scan completed normally
+- `1` means critical issues were found with `--fail-on-critical`
+- `2` means invalid input, parsing error, unsupported file, or usage error
 
 ---
 
@@ -167,12 +168,12 @@ PLAYER,Player: {name},Oyuncu:
 SETTINGS,Settings,Ayarlar
 ```
 
-LocaLint reports:
+LocaLint would report that:
 
 - `EXIT` is missing a Turkish translation
 - `PLAYER` is missing the `{name}` placeholder
-- the file receives a health score
-- issues are grouped by severity
+- the file has release-risk issues
+- issues should be fixed by severity
 
 ---
 
@@ -193,19 +194,19 @@ LocaLint reports:
 
 Severity levels:
 
-- **CRITICAL** — likely to break localization quality or formatting
-- **WARNING** — should be reviewed before release
-- **INFO** — cleanup or consistency note
+- **CRITICAL**: likely to break formatting or release quality
+- **WARNING**: should be reviewed before release
+- **INFO**: cleanup or consistency note
 
 ---
 
-## Sample Files
+## Sample files
 
 The `sample_data/` folder includes:
 
-- `godot_sample.csv` — small clean CSV example
-- `broken_sample.csv` — intentionally broken demo file
-- `sample.json` — flat JSON localization example
+- `godot_sample.csv`: a small clean CSV example
+- `broken_sample.csv`: an intentionally broken demo file
+- `sample.json`: a flat JSON localization example
 
 ---
 
@@ -217,7 +218,7 @@ The `sample_data/` folder includes:
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-If Windows blocks pytest temp folders, use:
+If Windows blocks pytest temp folders, run:
 
 ```powershell
 New-Item -ItemType Directory -Force .pytest-tmp
@@ -232,7 +233,7 @@ source .venv/bin/activate
 python -m pytest
 ```
 
-Last local verification:
+Last local check:
 
 ```text
 21 passed
@@ -278,7 +279,7 @@ sudo apt install python3-venv
 
 ---
 
-## Current Limits
+## Current limits
 
 LocaLint is still focused on CSV/JSON localization QA.
 
@@ -295,7 +296,7 @@ Not included yet:
 
 ## Roadmap
 
-Possible next steps:
+Likely next steps:
 
 - `.po` file support
 - glossary consistency checks
@@ -306,7 +307,7 @@ Possible next steps:
 
 ---
 
-## Tech Stack
+## Tech stack
 
 - Python
 - Streamlit
