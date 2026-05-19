@@ -1,44 +1,58 @@
 # LocaLint
 
-**Catch broken game localization files before your players do.**
+**A local QA tool for CSV/JSON localization files.**
 
-LocaLint is a local localization QA tool for CSV/JSON game localization files. It can run as a Streamlit web app or as a command-line tool.
+LocaLint checks localization files before release and catches the boring mistakes that are easy to miss: missing translations, broken placeholders, duplicate keys, unchanged strings, long UI text, whitespace issues, punctuation drift, line break mismatches, and encoding warnings.
 
-LocaLint checks existing localization files for missing translations, placeholder mismatches, duplicate keys, suspicious unchanged text, length expansion risks, whitespace issues, line break mismatches, punctuation drift, and CSV encoding warnings.
+It runs locally.
 
-It is not a translation generator.
+No login.  
+No cloud upload.  
+No database.  
+No AI API.  
+No telemetry.  
+Your files stay on your machine.
 
-## What LocaLint Is
+---
 
-LocaLint is a localization QA checker for developers and small game teams preparing exported localization files for release.
+## Why?
 
-It supports Godot, Unity, Unreal, Steam, itch.io, and generic workflows through exported CSV/JSON-style localization data. It does not include native engine plugin integration in this version.
+Localization bugs often hide in plain sight.
 
-## What LocaLint Is Not
+A missing `{count}` can break a runtime string.  
+A duplicate key can override a translation.  
+A long translated label can overflow a button.  
+A line can stay untranslated without anyone noticing until release.
 
-- Not a translation generator.
-- No AI APIs.
-- No login.
-- No payments.
-- No database.
-- No telemetry or analytics.
-- No cloud upload.
-- No native Godot, Unity, or Unreal plugin code.
-- No `.po` support in v0.2.0.
+LocaLint is a small pre-release check for those problems.
 
-Native plugins and `.po` support may be future roadmap items, but they are not current functionality.
+It does not translate text.  
+It checks the structure and safety of existing localization files.
 
-## Privacy / Local-First
+---
 
-LocaLint runs locally on your machine. Uploaded files in the Streamlit app and files scanned by the CLI are processed locally.
+## What it supports
 
-There is no login, no database, no cloud upload, and no telemetry.
+LocaLint currently supports:
+
+- CSV localization tables
+- JSON localization dictionaries
+- Streamlit web UI
+- CLI mode
+- Markdown, JSON, CSV, and text reports
+
+It is useful for game localization workflows, especially Godot-style CSV tables, but the checks are generic enough for other CSV/JSON localization files too.
+
+---
 
 ## Quick Start
 
-Windows PowerShell:
+Choose a writable folder first, such as Desktop or Documents.
+
+### Windows PowerShell
 
 ```powershell
+cd "$HOME\Desktop"
 git clone https://github.com/bsagir61/LocaLint.git
 cd LocaLint
 python -m venv .venv
@@ -46,9 +60,10 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-macOS / Linux:
+### macOS / Linux
 
 ```bash
+cd ~/Desktop
 git clone https://github.com/bsagir61/LocaLint.git
 cd LocaLint
 python3 -m venv .venv
@@ -57,120 +72,142 @@ pip install -r requirements.txt
 python -m streamlit run app.py
 ```
 
-## CLI Usage
-
-Basic scan:
-
-```powershell
-.\.venv\Scripts\python.exe -m localint.cli sample_data/broken_sample.csv
-```
-
-Choose source language:
-
-```powershell
-.\.venv\Scripts\python.exe -m localint.cli sample_data/broken_sample.csv --source en
-```
-
-Export Markdown report:
-
-```powershell
-.\.venv\Scripts\python.exe -m localint.cli sample_data/broken_sample.csv --format markdown --out report.md
-```
-
-Export JSON report:
-
-```powershell
-.\.venv\Scripts\python.exe -m localint.cli sample_data/broken_sample.csv --format json --out report.json
-```
-
-Export CSV report:
-
-```powershell
-.\.venv\Scripts\python.exe -m localint.cli sample_data/broken_sample.csv --format csv --out report.csv
-```
-
-Fail on critical issues for CI-style usage:
-
-```powershell
-.\.venv\Scripts\python.exe -m localint.cli sample_data/broken_sample.csv --fail-on-critical
-```
-
-Print version:
-
-```powershell
-.\.venv\Scripts\python.exe -m localint.cli --version
-```
-
-CLI exit codes:
-
-- `0`: analysis completed.
-- `1`: critical issues found and `--fail-on-critical` was enabled.
-- `2`: invalid input, unsupported file, parsing error, or CLI usage error.
-
-## Supported Input Formats
-
-### CSV
-
-```csv
-key,en,tr,es
-START_GAME,Start Game,Oyuna Basla,Iniciar juego
-COINS,You have {count} coins,{count} jetonun var,Tienes {count} monedas
-```
-
-CSV notes:
-
-- A `key` column is recommended.
-- If there is no `key` column, the first column is treated as the key column.
-- At least one language column is required.
-- For target QA checks, use at least two language columns, such as `en` and `tr`.
-
-### JSON
-
-```json
-{
-  "START_GAME": {
-    "en": "Start Game",
-    "tr": "Oyuna Basla"
-  },
-  "COINS": {
-    "en": "You have {count} coins",
-    "tr": "{count} jetonun var"
-  }
-}
-```
-
-Expected shape: a flat dictionary where each localization key maps to locale values.
-
-## Streamlit App
-
-Run:
-
-```powershell
-.\.venv\Scripts\python.exe -m streamlit run app.py
-```
-
-Then open the local URL shown in the terminal, usually:
+Then open:
 
 ```text
 http://localhost:8501
 ```
 
-The app includes upload, source-language selection, issue filters, file preview, report exports, and a one-click demo sample.
+---
+
+## CLI Usage
+
+LocaLint can also run from the terminal.
+
+Basic scan:
+
+```bash
+python -m localint.cli sample_data/broken_sample.csv --source en
+```
+
+Export a Markdown report:
+
+```bash
+python -m localint.cli sample_data/broken_sample.csv --source en --format markdown --out report.md
+```
+
+Export JSON:
+
+```bash
+python -m localint.cli sample_data/broken_sample.csv --source en --format json --out report.json
+```
+
+Use it in stricter workflows:
+
+```bash
+python -m localint.cli sample_data/broken_sample.csv --source en --fail-on-critical
+```
+
+Show version:
+
+```bash
+python -m localint.cli --version
+```
+
+---
+
+## CLI Exit Codes
+
+- `0` — scan completed normally
+- `1` — critical issues found with `--fail-on-critical`
+- `2` — invalid input, parsing error, unsupported file, or usage error
+
+---
+
+## Example CSV
+
+```csv
+key,en,tr
+START_GAME,Start Game,Oyuna Başla
+EXIT,Exit,
+COINS,You have {count} coins,{count} jetonun var
+PLAYER,Player: {name},Oyuncu:
+SETTINGS,Settings,Ayarlar
+```
+
+LocaLint reports:
+
+- `EXIT` is missing a Turkish translation
+- `PLAYER` is missing the `{name}` placeholder
+- the file receives a health score
+- the report lists the issues by severity
+
+---
+
+## Checks
+
+LocaLint currently detects:
+
+| Check | What it catches |
+|---|---|
+| Missing translations | Empty target-language cells |
+| Placeholder mismatches | Missing or extra `{name}`, `{count}`, `%s`, `%d`, tags, and similar tokens |
+| Duplicate keys | Repeated localization keys |
+| Invalid keys | Empty keys or suspicious key names |
+| Unchanged strings | Target text that still matches the source |
+| Length expansion | Text that may overflow UI labels, buttons, or menus |
+| Line break drift | Different line break structure between source and target |
+| Whitespace issues | Leading or trailing spaces |
+| Punctuation drift | Missing or changed ending punctuation |
+| CSV encoding warnings | Possible UTF-8 BOM issues |
+
+Severity levels:
+
+- **CRITICAL** — likely to break localization quality or formatting
+- **WARNING** — should be reviewed before release
+- **INFO** — cleanup or consistency note
+
+---
 
 ## Tests
 
-Windows PowerShell:
+### Windows PowerShell
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-macOS / Linux:
+If Windows blocks pytest temp folders, use:
+
+```powershell
+New-Item -ItemType Directory -Force .pytest-tmp
+.\.venv\Scripts\python.exe -m pytest --basetemp=.pytest-tmp
+```
+
+### macOS / Linux
 
 ```bash
 source .venv/bin/activate
 python -m pytest
 ```
+
+Last local verification:
+
+```text
+21 passed
+```
+
+---
+
+## Sample Files
+
+The `sample_data/` folder includes:
+
+- `godot_sample.csv` — small clean CSV example
+- `broken_sample.csv` — intentionally broken demo file
+- `sample.json` — flat JSON localization example
+
+---
 
 ## Troubleshooting
 
@@ -190,57 +227,67 @@ Use:
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-### Virtual environment not activated
+### `Permission denied` while cloning
 
-Activation is optional on Windows if you use explicit commands:
+You are probably trying to clone into a protected folder such as `System32`.
 
-```powershell
-.\.venv\Scripts\python.exe -m localint.cli sample_data/broken_sample.csv
-.\.venv\Scripts\python.exe -m streamlit run app.py
-```
-
-### Missing dependencies
-
-Run from the repository root:
+Move to Desktop or Documents first:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+cd "$HOME\Desktop"
 ```
 
-### Wrong working directory
+### Linux: `venv` is missing
 
-Run commands from the folder that contains `app.py`, `requirements.txt`, and `README.md`.
+Ubuntu / Debian:
 
-Windows PowerShell:
-
-```powershell
-Get-Location
-cd path\to\LocaLint
+```bash
+sudo apt install python3-venv
 ```
 
-## Sample Data
+---
 
-- `sample_data/godot_sample.csv`: small clean sample.
-- `sample_data/broken_sample.csv`: demo file with common localization QA issues.
-- `sample_data/sample.json`: flat JSON localization dictionary.
+## Current Limits
 
-## Project Status
+LocaLint is still small on purpose.
 
-LocaLint v0.2.0 is an early local-first MVP with both Streamlit and CLI modes.
+Not included yet:
 
-The current focus is reliable localization QA for CSV/JSON files. It does not generate translations, call AI APIs, upload files, or integrate as a native engine plugin.
+- `.po` support
+- batch ZIP reports
+- glossary consistency checks
+- screenshot-based overflow prediction
+- native Godot/Unity/Unreal plugins
+- hosted web demo
+
+For now, LocaLint focuses on local CSV/JSON localization QA.
+
+---
 
 ## Roadmap
 
-Possible future work:
+Possible next steps:
 
-- Batch ZIP upload.
-- `.po` support.
-- Godot plugin.
-- Unity editor extension.
-- Glossary consistency checks.
-- Steam store localization checker.
-- Screenshot text overflow prediction.
+- `.po` file support
+- glossary consistency checks
+- batch reports
+- Godot-specific CSV preset
+- Unity String Table export support
+- GitHub Actions / CI example
+- public hosted demo
+
+---
+
+## Tech Stack
+
+- Python
+- Streamlit
+- pandas
+- pydantic
+- pytest
+- argparse
+
+---
 
 ## License
 
