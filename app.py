@@ -46,9 +46,24 @@ st.set_page_config(page_title="LocaLint", page_icon="LC", layout="wide")
 st.markdown(
     """
     <style>
-      .block-container { padding-top: 2rem; }
-      .loca-title { font-size: 3.1rem; font-weight: 850; margin-bottom: 0; letter-spacing: 0; }
-      .loca-subtitle { color: #9aa4af; font-size: 1.15rem; margin-top: .15rem; }
+      .block-container { padding-top: 1.75rem; }
+      .loca-header {
+        overflow: visible;
+        margin: 0 0 .85rem;
+        padding: .1rem 0 .15rem;
+      }
+      .loca-title {
+        display: block;
+        overflow: visible;
+        font-size: 2.55rem;
+        line-height: 1.18;
+        font-weight: 850;
+        margin: 0 0 .1rem;
+        padding: .05rem 0 .1rem;
+        letter-spacing: 0;
+      }
+      .loca-subtitle { color: #9aa4af; font-size: 1.08rem; line-height: 1.35; margin: 0 0 .55rem; }
+      .loca-hero-line { font-size: 1.25rem; line-height: 1.35; font-weight: 720; margin: .35rem 0 0; }
       .hero-strip {
         border: 1px solid rgba(125, 133, 144, .18);
         border-radius: 8px;
@@ -78,7 +93,7 @@ st.markdown(
       .issue-card {
         border: 1px solid rgba(125, 133, 144, .18);
         border-radius: 8px;
-        padding: 13px 15px;
+        padding: 14px 16px;
         margin-bottom: 10px;
         background: rgba(22, 27, 34, .28);
       }
@@ -86,13 +101,22 @@ st.markdown(
       .issue-meta { color: #9aa4af; font-size: .86rem; margin-top: 6px; }
       .issue-text { margin-top: 9px; }
       .muted { color: #9aa4af; }
+      .trust-note { font-size: .92rem; line-height: 1.45; color: #c7d0d9; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.markdown('<p class="loca-title">LocaLint</p>', unsafe_allow_html=True)
-st.markdown('<p class="loca-subtitle">Game localization QA before release.</p>', unsafe_allow_html=True)
+st.markdown(
+    """
+    <div class="loca-header">
+      <div class="loca-title">LocaLint</div>
+      <div class="loca-subtitle">CSV/JSON localization QA before release.</div>
+      <div class="loca-hero-line">Catch broken localization files before they reach a build.</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 if "load_demo_sample" not in st.session_state:
     st.session_state.load_demo_sample = False
@@ -101,14 +125,17 @@ with st.sidebar:
     st.header("QA Setup")
     st.markdown(
         """
-        **CSV/JSON localization QA**
-
-        Runs locally. No cloud upload. No login. Standalone tool, not a Godot plugin yet.
-        """
+        <div class="trust-note">
+        <strong>CSV/JSON localization QA</strong><br>
+        Runs locally. No cloud upload. No login.<br>
+        Standalone tool, not a Godot plugin yet.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
     st.link_button("GitHub repository", REPOSITORY_URL, use_container_width=True)
     st.divider()
-    upload = st.file_uploader("Upload CSV or JSON", type=["csv", "json", "po"])
+    upload = st.file_uploader("Upload CSV or JSON", type=["csv", "json"])
     if st.button("Load Demo Sample", use_container_width=True, type="primary"):
         st.session_state.load_demo_sample = True
     if upload is not None:
@@ -198,16 +225,16 @@ preview_frame = table_to_frame(table)
 def esc(value: object) -> str:
     return html_lib.escape(str(value or ""))
 
-overview_tab, issues_tab, preview_tab, export_tab, sell_tab = st.tabs(
-    ["Overview", "Issues", "File Preview", "Export", "Sell This MVP"]
+overview_tab, issues_tab, preview_tab, export_tab, validation_tab = st.tabs(
+    ["Overview", "Issues", "File Preview", "Export", "Validation Notes"]
 )
 
 with overview_tab:
-    st.subheader("Catch broken game localization files before your players do.")
+    st.subheader("Overview")
     st.markdown(
         """
         <div class="hero-strip">
-          This report prioritizes issues that can break game UI first: missing strings, broken variables, duplicate keys, then layout and cleanup risks.
+          This report prioritizes release-risk issues first: missing strings, broken variables, duplicate keys, then layout and cleanup risks.
         </div>
         """,
         unsafe_allow_html=True,
@@ -282,7 +309,7 @@ with issues_tab:
         if selected_locales:
             filtered = filtered[(filtered["locale"].isin(selected_locales)) | (filtered["locale"] == "")]
         if key_search:
-            filtered = filtered[filtered["key"].str.contains(key_search, case=False, na=False)]
+            filtered = filtered[filtered["key"].str.contains(key_search, case=False, na=False, regex=False)]
 
         st.caption(f"Showing {len(filtered)} of {len(issues_frame)} issues.")
 
@@ -316,7 +343,7 @@ with issues_tab:
             },
         )
 
-        st.subheader("Readable Issue Cards")
+        st.subheader("Issue Cards")
         for _, row in sorted_filtered.head(25).iterrows():
             meta = SEVERITY_META.get(row["severity"], SEVERITY_META["INFO"])
             locale_label = f" / {esc(row['locale'])}" if row["locale"] else ""
@@ -340,6 +367,7 @@ with preview_tab:
 
 with export_tab:
     st.subheader("Exports")
+    st.caption("Export the current QA result for a teammate, translator, or release checklist.")
     report_csv = issues_frame.to_csv(index=False).encode("utf-8")
     report_md = report_to_markdown(table, issues, source_language).encode("utf-8")
     summary_md = summary_to_markdown(table, issues, source_language).encode("utf-8")
@@ -351,32 +379,57 @@ with export_tab:
     col_c.download_button("Download summary HTML", summary_html, "localint_summary.html", "text/html")
     st.download_button("Download summary Markdown", summary_md, "localint_summary.md", "text/markdown")
 
-with sell_tab:
-    st.subheader("Pricing Suggestion")
-    st.table(
-        pd.DataFrame(
-            [
-                {"Tier": "Free", "Price": "$0", "Offer": "Up to 100 rows"},
-                {"Tier": "Indie", "Price": "$9", "Offer": "One-time report"},
-                {"Tier": "Pro", "Price": "$29", "Offer": "Lifetime small studio license"},
-                {"Tier": "Agency", "Price": "$19/month", "Offer": "Batch reports"},
-            ]
-        )
-    )
-
-    st.subheader("Outreach Templates")
+with validation_tab:
+    st.subheader("Who this is for")
     st.markdown(
         """
-**Godot indie dev**
+- Developers working with CSV/JSON localization files
+- Indie developers and small teams
+- Teams using spreadsheet-style localization workflows
+- Translators or teammates reviewing localization tables
+- Developers who want a local pre-release QA pass
 
-Hey, I built LocaLint for Godot localization CSVs: it catches missing translations, broken placeholders, duplicate keys, and UI overflow risks before release. Want me to run a quick free QA pass on your current localization file?
-
-**Unity indie dev**
-
-Hey, I noticed localization bugs are easy to miss during the last build push. I made LocaLint, a small local QA tool for CSV/JSON localization files. It flags broken variables like `{count}`, missing strings, and risky long translations. Happy to test one file for free.
-
-**Steam/itch.io launch**
-
-Shipping localized store/game text soon? LocaLint gives you a short QA report for missing translations, unchanged strings, formatting placeholders, and line break issues. It is local, fast, and made for small teams.
+LocaLint is not a native Godot, Unity, or Unreal plugin yet. Current support means exported CSV/JSON localization files.
         """
+    )
+
+    st.subheader("What to validate")
+    st.markdown(
+        """
+- Did LocaLint catch an issue you would have missed manually?
+- Is the report clear enough to send to a translator or teammate?
+- Are the severity levels useful?
+- Is the CLI useful for your workflow?
+- Which file format matters most next: `.po`, more CSV variants, or something else?
+- Would batch checking multiple files save time?
+- Would glossary consistency checks be useful?
+- Would this be better as a CLI-first tool, a web UI, or both?
+        """
+    )
+
+    st.subheader("Current positioning")
+    st.markdown(
+        """
+LocaLint is a local-first QA tool for CSV/JSON localization files.
+
+It does not translate text. It does not use AI. It does not upload files. It checks existing localization files for release-risk issues.
+        """
+    )
+
+    st.subheader("Future directions")
+    st.markdown(
+        """
+- `.po` support
+- Batch reports
+- Glossary consistency checks
+- Engine-specific presets
+- GitHub Actions / CI example
+- Public hosted demo
+- Native plugins later, only if there is real demand
+        """
+    )
+
+    st.subheader("Feedback")
+    st.write(
+        "If you use localization files in a real project, the most useful feedback is where the current checks fail, which formats are missing, and whether the report helps before release."
     )
