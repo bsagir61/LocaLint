@@ -1,48 +1,42 @@
 # LocaLint
 
-**Local checks for CSV/JSON localization files before they break your build.**
+**Local-first QA for CSV/JSON localization files.**
 
-LocaLint finds the quiet localization mistakes that are easy to miss before release: missing translations, broken placeholders, duplicate keys, unchanged strings, long UI text, whitespace issues, punctuation drift, line break mismatches, and encoding warnings.
+Localization files rarely fail loudly.
 
-It runs locally. Your files stay on your machine.
+They fail late.
+
+A missing `{count}` breaks a runtime string.  
+A duplicate key overrides the right translation.  
+A long translated label pushes a button out of shape.  
+An untranslated line survives until someone finally sees it in a build.
+
+LocaLint is a local check for those quiet mistakes.
+
+It scans existing CSV/JSON localization files and reports release-risk issues before they reach a build.
 
 No login.  
 No cloud upload.  
 No database.  
 No telemetry.  
-No AI API.
+No AI API.  
+Your files stay on your machine.
 
 ---
 
-## Why LocaLint exists
+## What LocaLint catches
 
-Localization bugs usually do not look dramatic at first.
-
-A missing `{count}` can break a runtime string.  
-A duplicate key can override the right translation.  
-A long translated label can push a button out of shape.  
-A line can stay untranslated until someone sees it in a build.
-
-LocaLint is a quick QA pass before that happens.
-
-It does not translate text.  
-It checks existing localization files for release-risk issues.
-
----
-
-## What it catches
-
-| Check | Example problem |
+| Check | What it finds |
 |---|---|
 | Missing translations | Empty target-language cells |
-| Placeholder mismatches | `{count}` exists in the source but not in the target |
-| Duplicate keys | The same localization key appears more than once |
+| Placeholder mismatches | Missing or extra `{count}`, `{name}`, `%s`, `%d`, tags, or similar tokens |
+| Duplicate keys | Repeated localization keys |
 | Invalid keys | Empty or suspicious key names |
-| Unchanged strings | Target text still matches the source |
-| Length expansion | Translated text may overflow UI labels, buttons, or menus |
-| Line break drift | Source and target line breaks do not match |
+| Unchanged strings | Target text that still matches the source |
+| Length expansion | Text that may overflow buttons, labels, menus, or HUD elements |
+| Line break drift | Different line break structure between source and target |
 | Whitespace issues | Leading or trailing spaces |
-| Punctuation drift | Changed or missing ending punctuation |
+| Punctuation drift | Missing or changed ending punctuation |
 | CSV encoding warnings | Possible UTF-8 BOM issues |
 
 Severity levels:
@@ -53,25 +47,32 @@ Severity levels:
 
 ---
 
-## Supported workflows
+## What LocaLint is
 
-LocaLint currently supports:
+LocaLint is:
 
-- CSV localization tables
-- JSON localization dictionaries
-- Streamlit web UI
-- command-line usage
-- text, Markdown, JSON, and CSV reports
+- a local QA tool for localization files
+- useful before sending files to translators or shipping a build
+- built for CSV/JSON localization workflows
+- usable through a Streamlit web UI
+- usable from the command line
+- designed to keep files on your machine
 
-It was built with game localization workflows in mind, but the checks are generic enough for other CSV/JSON localization files too.
+LocaLint is not:
 
-LocaLint is not a native Godot, Unity, or Unreal plugin yet.
+- a translation generator
+- an AI writing tool
+- a cloud service
+- a native Godot, Unity, or Unreal plugin
+- a replacement for human localization review
+
+It was built with game localization workflows in mind, but the checks are generic enough for other CSV/JSON localization tables too.
 
 ---
 
 ## Quick start
 
-Choose a normal writable folder first, such as Desktop or Documents.
+Pick a normal writable folder first, such as Desktop or Documents.
 
 ### Windows PowerShell
 
@@ -118,7 +119,7 @@ The launcher creates the virtual environment if needed, installs dependencies, a
 
 ## CLI usage
 
-Basic scan:
+Run a basic scan:
 
 ```bash
 python -m localint.cli sample_data/broken_sample.csv --source en
@@ -190,6 +191,23 @@ LocaLint would report that:
 
 ---
 
+## Example terminal output
+
+```text
+LocaLint report
+File: sample_data\broken_sample.csv
+Source language: en
+Target languages: tr, es
+Total keys: 11
+Total issues: 10
+Critical: 5
+Warning: 3
+Info: 2
+Health score: 23/100
+```
+
+---
+
 ## Sample files
 
 The `sample_data/` folder includes:
@@ -223,10 +241,10 @@ source .venv/bin/activate
 python -m pytest
 ```
 
-Last local check:
+Current test suite:
 
 ```text
-21 passed
+21 tests
 ```
 
 ---
@@ -271,7 +289,7 @@ sudo apt install python3-venv
 
 ## Current limits
 
-LocaLint is still focused on CSV/JSON localization QA.
+LocaLint is focused on CSV/JSON localization QA.
 
 Not included yet:
 
