@@ -24,7 +24,7 @@ It supports Godot, Unity, Unreal, Steam, itch.io, and generic workflows through 
 - No telemetry or analytics.
 - No cloud upload.
 - No native Godot, Unity, or Unreal plugin code.
-- No `.po` support in v0.2.0.
+- No `.po` support in v0.2.0
 
 Native plugins and `.po` support may be future roadmap items, but they are not current functionality.
 
