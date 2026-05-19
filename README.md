@@ -2,15 +2,6 @@
 
 **Local-first QA for CSV/JSON localization files.**
 
-Localization files rarely fail loudly.
-
-They fail late.
-
-A missing `{count}` breaks a runtime string.  
-A duplicate key overrides the right translation.  
-A long translated label pushes a button out of shape.  
-An untranslated line survives until someone finally sees it in a build.
-
 LocaLint is a local check for those quiet mistakes.
 
 It scans existing CSV/JSON localization files and reports release-risk issues before they reach a build.
