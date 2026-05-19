@@ -1,20 +1,10 @@
 # LocaLint
 
-**Local-first QA for CSV/JSON localization files.**
+**Local checks for CSV/JSON localization files before they break your build.**
 
-LocaLint checks localization files before release and catches the kinds of mistakes that usually slip through quietly:
+LocaLint finds the quiet localization mistakes that are easy to miss before release: missing translations, broken placeholders, duplicate keys, unchanged strings, long UI text, whitespace issues, punctuation drift, line break mismatches, and encoding warnings.
 
-- missing translations
-- broken placeholders
-- duplicate keys
-- unchanged target strings
-- long UI text
-- whitespace issues
-- punctuation drift
-- line break mismatches
-- encoding warnings
-
-It runs on your machine. Files are not uploaded anywhere.
+It runs locally. Your files stay on your machine.
 
 No login.  
 No cloud upload.  
@@ -24,30 +14,53 @@ No AI API.
 
 ---
 
-## Why this exists
+## Why LocaLint exists
 
-Localization files look simple until they break something.
+Localization bugs usually do not look dramatic at first.
 
 A missing `{count}` can break a runtime string.  
-A duplicate key can override a translation.  
-A long translated label can overflow a button.  
-A line can stay untranslated until someone notices it in a build.
+A duplicate key can override the right translation.  
+A long translated label can push a button out of shape.  
+A line can stay untranslated until someone sees it in a build.
 
-LocaLint is a quick check before that happens.
+LocaLint is a quick QA pass before that happens.
 
 It does not translate text.  
 It checks existing localization files for release-risk issues.
 
 ---
 
-## What it supports
+## What it catches
 
-LocaLint currently works with:
+| Check | Example problem |
+|---|---|
+| Missing translations | Empty target-language cells |
+| Placeholder mismatches | `{count}` exists in the source but not in the target |
+| Duplicate keys | The same localization key appears more than once |
+| Invalid keys | Empty or suspicious key names |
+| Unchanged strings | Target text still matches the source |
+| Length expansion | Translated text may overflow UI labels, buttons, or menus |
+| Line break drift | Source and target line breaks do not match |
+| Whitespace issues | Leading or trailing spaces |
+| Punctuation drift | Changed or missing ending punctuation |
+| CSV encoding warnings | Possible UTF-8 BOM issues |
+
+Severity levels:
+
+- **CRITICAL**: likely to break formatting or release quality
+- **WARNING**: should be checked before release
+- **INFO**: cleanup or consistency note
+
+---
+
+## Supported workflows
+
+LocaLint currently supports:
 
 - CSV localization tables
 - JSON localization dictionaries
-- a Streamlit web UI
-- a command-line interface
+- Streamlit web UI
+- command-line usage
 - text, Markdown, JSON, and CSV reports
 
 It was built with game localization workflows in mind, but the checks are generic enough for other CSV/JSON localization files too.
@@ -56,9 +69,9 @@ LocaLint is not a native Godot, Unity, or Unreal plugin yet.
 
 ---
 
-## Quick Start
+## Quick start
 
-Pick a normal writable folder first, such as Desktop or Documents.
+Choose a normal writable folder first, such as Desktop or Documents.
 
 ### Windows PowerShell
 
@@ -174,29 +187,6 @@ LocaLint would report that:
 - `PLAYER` is missing the `{name}` placeholder
 - the file has release-risk issues
 - issues should be fixed by severity
-
----
-
-## Checks
-
-| Check | What it catches |
-|---|---|
-| Missing translations | Empty target-language cells |
-| Placeholder mismatches | Missing or extra `{name}`, `{count}`, `%s`, `%d`, tags, and similar tokens |
-| Duplicate keys | Repeated localization keys |
-| Invalid keys | Empty keys or suspicious key names |
-| Unchanged strings | Target text that still matches the source |
-| Length expansion | Text that may overflow UI labels, buttons, or menus |
-| Line break drift | Different line break structure between source and target |
-| Whitespace issues | Leading or trailing spaces |
-| Punctuation drift | Missing or changed ending punctuation |
-| CSV encoding warnings | Possible UTF-8 BOM issues |
-
-Severity levels:
-
-- **CRITICAL**: likely to break formatting or release quality
-- **WARNING**: should be reviewed before release
-- **INFO**: cleanup or consistency note
 
 ---
 
