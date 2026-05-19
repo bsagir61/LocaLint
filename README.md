@@ -28,6 +28,12 @@ A line can stay untranslated until release.
 
 LocaLint is a pre-release check for those problems.
 
+It is not a translation generator.  
+It does not use AI APIs.  
+It checks existing localization files for release-risk issues.
+
+LocaLint is a pre-release check for those problems.
+
 It does not translate text.  
 It checks existing localization files for release-risk issues.
 
