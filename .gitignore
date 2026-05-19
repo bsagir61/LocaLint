@@ -1,7 +1,9 @@
 .venv/
-.uv-cache/
 __pycache__/
 .pytest_cache/
 pytest-cache-files-*/
+.pytest-tmp/
 *.pyc
-streamlit*.log
+*.pyo
+*.log
+.DS_Store
