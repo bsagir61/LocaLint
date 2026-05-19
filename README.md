@@ -1,8 +1,10 @@
 # LocaLint
 
-**A local QA tool for CSV/JSON localization files.**
+**Local-first QA for CSV/JSON localization files.**
 
-LocaLint checks localization files before release and catches the boring mistakes that are easy to miss: missing translations, broken placeholders, duplicate keys, unchanged strings, long UI text, whitespace issues, punctuation drift, line break mismatches, and encoding warnings.
+LocaLint helps catch broken localization files before they reach a build.
+
+It checks for missing translations, broken placeholders, duplicate keys, unchanged strings, long UI text, whitespace issues, punctuation drift, line break mismatches, and encoding warnings.
 
 It runs locally.
 
@@ -17,17 +19,17 @@ Your files stay on your machine.
 
 ## Why?
 
-Localization bugs often hide in plain sight.
+Localization bugs are easy to miss because they often hide in data files.
 
 A missing `{count}` can break a runtime string.  
-A duplicate key can override a translation.  
+A duplicated key can override a translation.  
 A long translated label can overflow a button.  
-A line can stay untranslated without anyone noticing until release.
+A line can stay untranslated until release.
 
-LocaLint is a small pre-release check for those problems.
+LocaLint is a pre-release check for those problems.
 
 It does not translate text.  
-It checks the structure and safety of existing localization files.
+It checks existing localization files for release-risk issues.
 
 ---
 
@@ -39,9 +41,11 @@ LocaLint currently supports:
 - JSON localization dictionaries
 - Streamlit web UI
 - CLI mode
-- Markdown, JSON, CSV, and text reports
+- Text, Markdown, JSON, and CSV reports
 
-It is useful for game localization workflows, especially Godot-style CSV tables, but the checks are generic enough for other CSV/JSON localization files too.
+It was built with game localization workflows in mind, but the checks are generic enough for other CSV/JSON localization files too.
+
+LocaLint is not a native Godot, Unity, or Unreal plugin yet.
 
 ---
 
@@ -80,14 +84,30 @@ http://localhost:8501
 
 ---
 
+## Windows Launcher
+
+On Windows, you can also start the app with:
+
+```text
+run-localint-windows.bat
+```
+
+The launcher creates the virtual environment if needed, installs dependencies, and starts the Streamlit app.
+
+---
+
 ## CLI Usage
 
-LocaLint can also run from the terminal.
-
-Basic scan:
+Run a basic scan:
 
 ```bash
 python -m localint.cli sample_data/broken_sample.csv --source en
+```
+
+Limit printed issues:
+
+```bash
+python -m localint.cli sample_data/broken_sample.csv --source en --max-issues 5
 ```
 
 Export a Markdown report:
@@ -100,6 +120,12 @@ Export JSON:
 
 ```bash
 python -m localint.cli sample_data/broken_sample.csv --source en --format json --out report.json
+```
+
+Export CSV:
+
+```bash
+python -m localint.cli sample_data/broken_sample.csv --source en --format csv --out report.csv
 ```
 
 Use it in stricter workflows:
@@ -140,13 +166,11 @@ LocaLint reports:
 - `EXIT` is missing a Turkish translation
 - `PLAYER` is missing the `{name}` placeholder
 - the file receives a health score
-- the report lists the issues by severity
+- issues are grouped by severity
 
 ---
 
 ## Checks
-
-LocaLint currently detects:
 
 | Check | What it catches |
 |---|---|
@@ -169,6 +193,16 @@ Severity levels:
 
 ---
 
+## Sample Files
+
+The `sample_data/` folder includes:
+
+- `godot_sample.csv` — small clean CSV example
+- `broken_sample.csv` — intentionally broken demo file
+- `sample.json` — flat JSON localization example
+
+---
+
 ## Tests
 
 ### Windows PowerShell
@@ -182,6 +216,7 @@ If Windows blocks pytest temp folders, use:
 ```powershell
 New-Item -ItemType Directory -Force .pytest-tmp
 .\.venv\Scripts\python.exe -m pytest --basetemp=.pytest-tmp
+Remove-Item .pytest-tmp -Recurse -Force -ErrorAction SilentlyContinue
 ```
 
 ### macOS / Linux
@@ -196,16 +231,6 @@ Last local verification:
 ```text
 21 passed
 ```
-
----
-
-## Sample Files
-
-The `sample_data/` folder includes:
-
-- `godot_sample.csv` — small clean CSV example
-- `broken_sample.csv` — intentionally broken demo file
-- `sample.json` — flat JSON localization example
 
 ---
 
@@ -249,18 +274,16 @@ sudo apt install python3-venv
 
 ## Current Limits
 
-LocaLint is still small on purpose.
+LocaLint is still focused on CSV/JSON localization QA.
 
 Not included yet:
 
 - `.po` support
-- batch ZIP reports
+- batch reports
 - glossary consistency checks
 - screenshot-based overflow prediction
-- native Godot/Unity/Unreal plugins
+- native Godot, Unity, or Unreal plugins
 - hosted web demo
-
-For now, LocaLint focuses on local CSV/JSON localization QA.
 
 ---
 
@@ -271,8 +294,7 @@ Possible next steps:
 - `.po` file support
 - glossary consistency checks
 - batch reports
-- Godot-specific CSV preset
-- Unity String Table export support
+- engine-specific presets
 - GitHub Actions / CI example
 - public hosted demo
 
