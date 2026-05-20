@@ -1,16 +1,20 @@
 # LocaLint
 
-**Local-first QA for CSV/JSON localization files.**
+LocaLint checks CSV/JSON localization files before release.
 
-LocaLint is a local check for those quiet mistakes.
+It looks for the kinds of problems that are easy to miss in localization tables:
 
-It scans existing CSV/JSON localization files and reports release-risk issues before they reach a build.
+- missing translations
+- broken placeholders
+- duplicate keys
+- unchanged target strings
+- long UI text
+- formatting drift
+- JSON structure issues
+- CSV encoding warnings
 
-No login.  
-No cloud upload.  
-No database.  
-No telemetry.  
-No AI API.  
+LocaLint runs locally. Files are not uploaded anywhere.
+No AI API requirement.
 Your files stay on your machine.
 
 ---
@@ -35,6 +39,25 @@ Severity levels:
 - **CRITICAL**: likely to break formatting or release quality
 - **WARNING**: should be checked before release
 - **INFO**: cleanup or consistency note
+=======
+No AI API.
+
+---
+
+## Why
+
+Localization files often look harmless until they reach a build.
+
+A missing `{count}` can break a runtime string.  
+A duplicate key can override the right translation.  
+A long translated label can overflow a button.  
+An untranslated line can survive until release.
+
+LocaLint is a local check for those issues.
+
+It does not translate text.  
+It checks existing localization files and reports release-risk problems.
+>>>>>>> 820b1e6 (Update README)
 
 ---
 
@@ -42,6 +65,7 @@ Severity levels:
 
 LocaLint is:
 
+<<<<<<< HEAD
 - a local QA tool for localization files
 - useful before sending files to translators or shipping a build
 - built for CSV/JSON localization workflows
@@ -50,6 +74,15 @@ LocaLint is:
 - designed to keep files on your machine
 
 LocaLint is not:
+=======
+- CSV localization tables
+- JSON localization dictionaries
+- Streamlit web UI
+- command-line usage
+- text, Markdown, JSON, and CSV reports
+
+It was built with game localization workflows in mind, but the checks are useful for other CSV/JSON localization files too.
+>>>>>>> 820b1e6 (Update README)
 
 - a translation generator
 - an AI writing tool
@@ -63,7 +96,11 @@ It was built with game localization workflows in mind, but the checks are generi
 
 ## Quick start
 
+<<<<<<< HEAD
 Pick a normal writable folder first, such as Desktop or Documents.
+=======
+Choose a normal writable folder first, such as Desktop or Documents.
+>>>>>>> 820b1e6 (Update README)
 
 ### Windows PowerShell
 
@@ -71,10 +108,31 @@ Pick a normal writable folder first, such as Desktop or Documents.
 cd "$HOME\Desktop"
 git clone https://github.com/bsagir61/LocaLint.git
 cd LocaLint
-python -m venv .venv
+py -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
+
+Then open:
+
+```text
+http://localhost:8501
+```
+
+If you already cloned the repository:
+
+```powershell
+cd "$HOME\Desktop\LocaLint"
+.\.venv\Scripts\python.exe -m streamlit run app.py
+```
+
+Or use the Windows launcher:
+
+```powershell
+.\run-localint-windows.bat
+```
+
+---
 
 ### macOS / Linux
 
@@ -96,6 +154,7 @@ http://localhost:8501
 
 ---
 
+<<<<<<< HEAD
 ## Windows launcher
 
 On Windows, you can also start the app by double-clicking:
@@ -111,6 +170,11 @@ The launcher creates the virtual environment if needed, installs dependencies, a
 ## CLI usage
 
 Run a basic scan:
+=======
+## CLI usage
+
+Basic scan:
+>>>>>>> 820b1e6 (Update README)
 
 ```bash
 python -m localint.cli sample_data/broken_sample.csv --source en
@@ -159,6 +223,33 @@ python -m localint.cli --version
 - `0` means the scan completed normally
 - `1` means critical issues were found with `--fail-on-critical`
 - `2` means invalid input, parsing error, unsupported file, or usage error
+<<<<<<< HEAD
+=======
+
+---
+
+## Checks
+
+| Check | What it catches |
+|---|---|
+| Missing translations | Empty target-language cells |
+| Placeholder mismatches | Missing or extra `{count}`, `{name}`, `%s`, `%d`, tags, or similar tokens |
+| Duplicate keys | Repeated localization keys |
+| Invalid keys | Empty or suspicious key names |
+| Unchanged strings | Target text that still matches the source |
+| Length expansion | Text that may overflow buttons, labels, menus, or HUD elements |
+| Line break drift | Different line break structure between source and target |
+| Whitespace issues | Leading or trailing spaces |
+| Punctuation drift | Missing or changed ending punctuation |
+| JSON structure issues | JSON files that do not match the expected localization shape |
+| CSV encoding warnings | Possible UTF-8 BOM issues |
+
+Severity levels:
+
+- **CRITICAL**: likely to break formatting or release quality
+- **WARNING**: should be checked before release
+- **INFO**: cleanup or consistency note
+>>>>>>> 820b1e6 (Update README)
 
 ---
 
@@ -203,9 +294,15 @@ Health score: 23/100
 
 The `sample_data/` folder includes:
 
+<<<<<<< HEAD
 - `godot_sample.csv`: a small clean CSV example
 - `broken_sample.csv`: an intentionally broken demo file
 - `sample.json`: a flat JSON localization example
+=======
+- `godot_sample.csv`: clean CSV example
+- `broken_sample.csv`: intentionally broken demo file
+- `sample.json`: flat JSON localization example
+>>>>>>> 820b1e6 (Update README)
 
 ---
 
@@ -217,7 +314,11 @@ The `sample_data/` folder includes:
 .\.venv\Scripts\python.exe -m pytest
 ```
 
+<<<<<<< HEAD
 If Windows blocks pytest temp folders, run:
+=======
+If Windows blocks pytest temp folders:
+>>>>>>> 820b1e6 (Update README)
 
 ```powershell
 New-Item -ItemType Directory -Force .pytest-tmp
@@ -260,9 +361,9 @@ Use:
 
 ### `Permission denied` while cloning
 
-You are probably trying to clone into a protected folder such as `System32`.
+You are probably trying to clone into a protected system folder.
 
-Move to Desktop or Documents first:
+Use Desktop or Documents instead:
 
 ```powershell
 cd "$HOME\Desktop"
@@ -297,12 +398,12 @@ Not included yet:
 
 Likely next steps:
 
-- `.po` file support
+- `.po` support
 - glossary consistency checks
 - batch reports
 - engine-specific presets
 - GitHub Actions / CI example
-- public hosted demo
+- hosted demo
 
 ---
 
