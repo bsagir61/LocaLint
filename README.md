@@ -14,33 +14,12 @@ It looks for the kinds of problems that are easy to miss in localization tables:
 - CSV encoding warnings
 
 LocaLint runs locally. Files are not uploaded anywhere.
+
+No login.  
+No cloud upload.  
+No database.  
+No telemetry.  
 No AI API requirement.
-Your files stay on your machine.
-
----
-
-## What LocaLint catches
-
-| Check | What it finds |
-|---|---|
-| Missing translations | Empty target-language cells |
-| Placeholder mismatches | Missing or extra `{count}`, `{name}`, `%s`, `%d`, tags, or similar tokens |
-| Duplicate keys | Repeated localization keys |
-| Invalid keys | Empty or suspicious key names |
-| Unchanged strings | Target text that still matches the source |
-| Length expansion | Text that may overflow buttons, labels, menus, or HUD elements |
-| Line break drift | Different line break structure between source and target |
-| Whitespace issues | Leading or trailing spaces |
-| Punctuation drift | Missing or changed ending punctuation |
-| CSV encoding warnings | Possible UTF-8 BOM issues |
-
-Severity levels:
-
-- **CRITICAL**: likely to break formatting or release quality
-- **WARNING**: should be checked before release
-- **INFO**: cleanup or consistency note
-=======
-No AI API.
 
 ---
 
@@ -57,24 +36,13 @@ LocaLint is a local check for those issues.
 
 It does not translate text.  
 It checks existing localization files and reports release-risk problems.
->>>>>>> 820b1e6 (Update README)
 
 ---
 
-## What LocaLint is
+## What it supports
 
-LocaLint is:
+LocaLint currently supports:
 
-<<<<<<< HEAD
-- a local QA tool for localization files
-- useful before sending files to translators or shipping a build
-- built for CSV/JSON localization workflows
-- usable through a Streamlit web UI
-- usable from the command line
-- designed to keep files on your machine
-
-LocaLint is not:
-=======
 - CSV localization tables
 - JSON localization dictionaries
 - Streamlit web UI
@@ -82,25 +50,14 @@ LocaLint is not:
 - text, Markdown, JSON, and CSV reports
 
 It was built with game localization workflows in mind, but the checks are useful for other CSV/JSON localization files too.
->>>>>>> 820b1e6 (Update README)
 
-- a translation generator
-- an AI writing tool
-- a cloud service
-- a native Godot, Unity, or Unreal plugin
-- a replacement for human localization review
-
-It was built with game localization workflows in mind, but the checks are generic enough for other CSV/JSON localization tables too.
+LocaLint is not a native Godot, Unity, or Unreal plugin yet.
 
 ---
 
 ## Quick start
 
-<<<<<<< HEAD
-Pick a normal writable folder first, such as Desktop or Documents.
-=======
 Choose a normal writable folder first, such as Desktop or Documents.
->>>>>>> 820b1e6 (Update README)
 
 ### Windows PowerShell
 
@@ -154,27 +111,9 @@ http://localhost:8501
 
 ---
 
-<<<<<<< HEAD
-## Windows launcher
-
-On Windows, you can also start the app by double-clicking:
-
-```text
-run-localint-windows.bat
-```
-
-The launcher creates the virtual environment if needed, installs dependencies, and starts the Streamlit app.
-
----
-
-## CLI usage
-
-Run a basic scan:
-=======
 ## CLI usage
 
 Basic scan:
->>>>>>> 820b1e6 (Update README)
 
 ```bash
 python -m localint.cli sample_data/broken_sample.csv --source en
@@ -223,8 +162,6 @@ python -m localint.cli --version
 - `0` means the scan completed normally
 - `1` means critical issues were found with `--fail-on-critical`
 - `2` means invalid input, parsing error, unsupported file, or usage error
-<<<<<<< HEAD
-=======
 
 ---
 
@@ -249,7 +186,6 @@ Severity levels:
 - **CRITICAL**: likely to break formatting or release quality
 - **WARNING**: should be checked before release
 - **INFO**: cleanup or consistency note
->>>>>>> 820b1e6 (Update README)
 
 ---
 
@@ -294,15 +230,9 @@ Health score: 23/100
 
 The `sample_data/` folder includes:
 
-<<<<<<< HEAD
-- `godot_sample.csv`: a small clean CSV example
-- `broken_sample.csv`: an intentionally broken demo file
-- `sample.json`: a flat JSON localization example
-=======
 - `godot_sample.csv`: clean CSV example
 - `broken_sample.csv`: intentionally broken demo file
 - `sample.json`: flat JSON localization example
->>>>>>> 820b1e6 (Update README)
 
 ---
 
@@ -314,11 +244,7 @@ The `sample_data/` folder includes:
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-<<<<<<< HEAD
-If Windows blocks pytest temp folders, run:
-=======
 If Windows blocks pytest temp folders:
->>>>>>> 820b1e6 (Update README)
 
 ```powershell
 New-Item -ItemType Directory -Force .pytest-tmp
