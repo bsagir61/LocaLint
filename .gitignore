@@ -1,8 +1,16 @@
 .venv/
+.env
+.env.local
+.streamlit/secrets.toml
+credentials.json
+token.json
 __pycache__/
 .pytest_cache/
 pytest-cache-files-*/
 .pytest-tmp/
+report.md
+report.json
+report.csv
 *.pyc
 *.pyo
 *.log

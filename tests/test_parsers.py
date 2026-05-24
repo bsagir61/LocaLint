@@ -1,6 +1,6 @@
 import pytest
 
-from localint.parsers import ParserError, parse_csv, parse_json, parse_upload
+from localint.parsers import KEY_FALLBACK_WARNING, ParserError, parse_csv, parse_json, parse_upload
 
 
 def test_csv_parser_reads_languages_rows_and_duplicates():
@@ -13,6 +13,7 @@ def test_csv_parser_reads_languages_rows_and_duplicates():
     assert table.rows[0].key == "START"
     assert table.rows[0].translations["tr"] == "Basla"
     assert table.duplicate_keys == ["START"]
+    assert table.shape_warnings == []
 
 
 def test_csv_parser_warns_on_utf8_bom():
@@ -43,6 +44,17 @@ def test_empty_csv_gets_clear_error():
 def test_csv_with_only_key_column_gets_clear_error():
     with pytest.raises(ParserError, match="at least one language column"):
         parse_csv(b"key\nSTART_GAME\n", source_name="only_key.csv")
+
+
+def test_csv_without_key_column_uses_first_column_fallback():
+    data = b"id,en,tr\nSTART,Start,Basla\n"
+
+    table = parse_csv(data, source_name="missing_key.csv")
+
+    assert table.languages == ["en", "tr"]
+    assert table.rows[0].key == "START"
+    assert table.rows[0].translations["tr"] == "Basla"
+    assert table.shape_warnings == [KEY_FALLBACK_WARNING]
 
 
 def test_csv_with_headers_but_no_rows_gets_clear_error():
