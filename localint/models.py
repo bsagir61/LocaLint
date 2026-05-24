@@ -34,6 +34,7 @@ class LocalizationTable(BaseModel):
     source_language: str = "en"
     duplicate_keys: list[str] = Field(default_factory=list)
     encoding_warnings: list[str] = Field(default_factory=list)
+    shape_warnings: list[str] = Field(default_factory=list)
     source_name: str = "uploaded file"
 
     @property

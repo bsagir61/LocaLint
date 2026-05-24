@@ -1,8 +1,8 @@
 # LocaLint
 
-LocaLint checks CSV/JSON localization files before release.
+Local-first QA for CSV/JSON localization files.
 
-It looks for the kinds of problems that are easy to miss in localization tables:
+LocaLint checks existing localization files before release. It looks for problems that are easy to miss in tables and exported string files:
 
 - missing translations
 - broken placeholders
@@ -13,33 +13,21 @@ It looks for the kinds of problems that are easy to miss in localization tables:
 - JSON structure issues
 - CSV encoding warnings
 
-LocaLint runs locally. Files are not uploaded anywhere.
-
-No login.  
-No cloud upload.  
-No database.  
-No telemetry.  
-No AI API requirement.
+LocaLint runs on your machine. It does not translate text, use AI, upload files, require login, store data in a database, or send telemetry.
 
 ---
 
-## Why
+## What it is for
 
-Localization files often look harmless until they reach a build.
+Localization files can look fine until they reach a build. A missing `{count}` can break a runtime string. A duplicate key can override the right text. A long label can overflow a button. An empty cell can make it all the way to release.
 
-A missing `{count}` can break a runtime string.  
-A duplicate key can override the right translation.  
-A long translated label can overflow a button.  
-An untranslated line can survive until release.
+LocaLint gives you a local QA pass for those issues.
 
-LocaLint is a local check for those issues.
-
-It does not translate text.  
-It checks existing localization files and reports release-risk problems.
+It was built with game localization workflows in mind, but it works for other CSV/JSON localization files too.
 
 ---
 
-## What it supports
+## Supported files
 
 LocaLint currently supports:
 
@@ -49,15 +37,13 @@ LocaLint currently supports:
 - command-line usage
 - text, Markdown, JSON, and CSV reports
 
-It was built with game localization workflows in mind, but the checks are useful for other CSV/JSON localization files too.
-
-LocaLint is not a native Godot, Unity, or Unreal plugin yet.
+It is not a native Godot, Unity, or Unreal plugin.
 
 ---
 
 ## Quick start
 
-Choose a normal writable folder first, such as Desktop or Documents.
+Use a normal writable folder such as Desktop or Documents.
 
 ### Windows PowerShell
 
@@ -76,20 +62,18 @@ Then open:
 http://localhost:8501
 ```
 
-If you already cloned the repository:
+If the repository is already cloned:
 
 ```powershell
 cd "$HOME\Desktop\LocaLint"
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-Or use the Windows launcher:
+You can also use the Windows launcher:
 
 ```powershell
 .\run-localint-windows.bat
 ```
-
----
 
 ### macOS / Linux
 
@@ -113,13 +97,17 @@ http://localhost:8501
 
 ## CLI usage
 
+Run these commands from the repository root after installing dependencies.
+
+On Windows PowerShell, use `.\.venv\Scripts\python.exe` instead of `python` if the virtual environment is not active.
+
 Basic scan:
 
 ```bash
 python -m localint.cli sample_data/broken_sample.csv --source en
 ```
 
-Show fewer issues in the terminal:
+Limit terminal output:
 
 ```bash
 python -m localint.cli sample_data/broken_sample.csv --source en --max-issues 5
@@ -143,32 +131,30 @@ Export CSV:
 python -m localint.cli sample_data/broken_sample.csv --source en --format csv --out report.csv
 ```
 
-Fail when critical issues are found:
+Fail the command when critical issues are found:
 
 ```bash
 python -m localint.cli sample_data/broken_sample.csv --source en --fail-on-critical
 ```
 
-Show version:
+Show the installed version:
 
 ```bash
 python -m localint.cli --version
 ```
 
----
+### Exit codes
 
-## CLI exit codes
-
-- `0` means the scan completed normally
-- `1` means critical issues were found with `--fail-on-critical`
-- `2` means invalid input, parsing error, unsupported file, or usage error
+- `0`: scan completed
+- `1`: critical issues were found with `--fail-on-critical`
+- `2`: invalid input, parse error, unsupported file, or usage error
 
 ---
 
 ## Checks
 
 | Check | What it catches |
-|---|---|
+| --- | --- |
 | Missing translations | Empty target-language cells |
 | Placeholder mismatches | Missing or extra `{count}`, `{name}`, `%s`, `%d`, tags, or similar tokens |
 | Duplicate keys | Repeated localization keys |
@@ -184,7 +170,7 @@ python -m localint.cli --version
 Severity levels:
 
 - **CRITICAL**: likely to break formatting or release quality
-- **WARNING**: should be checked before release
+- **WARNING**: should be reviewed before release
 - **INFO**: cleanup or consistency note
 
 ---
@@ -193,7 +179,7 @@ Severity levels:
 
 ```csv
 key,en,tr
-START_GAME,Start Game,Oyuna Başla
+START_GAME,Start Game,Oyuna Basla
 EXIT,Exit,
 COINS,You have {count} coins,{count} jetonun var
 PLAYER,Player: {name},Oyuncu:
@@ -204,8 +190,7 @@ LocaLint would report that:
 
 - `EXIT` is missing a Turkish translation
 - `PLAYER` is missing the `{name}` placeholder
-- the file has release-risk issues
-- issues should be fixed by severity
+- the file has release-risk issues to fix before shipping
 
 ---
 
@@ -241,12 +226,6 @@ The `sample_data/` folder includes:
 ### Windows PowerShell
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest
-```
-
-If Windows blocks pytest temp folders:
-
-```powershell
 New-Item -ItemType Directory -Force .pytest-tmp
 .\.venv\Scripts\python.exe -m pytest --basetemp=.pytest-tmp
 Remove-Item .pytest-tmp -Recurse -Force -ErrorAction SilentlyContinue
@@ -262,7 +241,7 @@ python -m pytest
 Current test suite:
 
 ```text
-21 tests
+22 tests
 ```
 
 ---
@@ -287,9 +266,7 @@ Use:
 
 ### `Permission denied` while cloning
 
-You are probably trying to clone into a protected system folder.
-
-Use Desktop or Documents instead:
+You are probably cloning into a protected system folder. Use Desktop or Documents instead:
 
 ```powershell
 cd "$HOME\Desktop"
@@ -305,31 +282,18 @@ sudo apt install python3-venv
 
 ---
 
-## Current limits
+## Current scope
 
-LocaLint is focused on CSV/JSON localization QA.
+LocaLint is focused on local QA for CSV/JSON localization files.
 
-Not included yet:
+It does not currently include:
 
-- `.po` support
+- `.po` file support
 - batch reports
 - glossary consistency checks
 - screenshot-based overflow prediction
 - native Godot, Unity, or Unreal plugins
-- hosted web demo
-
----
-
-## Roadmap
-
-Likely next steps:
-
-- `.po` support
-- glossary consistency checks
-- batch reports
-- engine-specific presets
-- GitHub Actions / CI example
-- hosted demo
+- hosted file upload or cloud analysis
 
 ---
 

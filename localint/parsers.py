@@ -13,6 +13,7 @@ from localint.utils import as_text
 
 
 UTF8_BOM = b"\xef\xbb\xbf"
+KEY_FALLBACK_WARNING = "No column named 'key' was found. LocaLint is using the first column as localization keys."
 
 
 class ParserError(ValueError):
@@ -37,6 +38,7 @@ def parse_csv(data: bytes, source_name: str = "uploaded.csv") -> LocalizationTab
         )
 
     warnings: list[str] = []
+    shape_warnings: list[str] = []
     if data.startswith(UTF8_BOM):
         warnings.append(
             "Godot CSV localization commonly expects UTF-8 without BOM. Re-save from LibreOffice or Google Sheets."
@@ -62,9 +64,12 @@ def parse_csv(data: bytes, source_name: str = "uploaded.csv") -> LocalizationTab
             "Could not read this CSV file. Please check that it has a key column and at least one language column."
         )
 
-    key_column = "key" if "key" in columns else columns[0]
-    if not key_column or key_column.lower().startswith("unnamed:"):
-        raise ParserError("Could not find a usable key column. Add a 'key' column as the first column.")
+    key_columns = [column for column in columns if column.lower() == "key"]
+    if key_columns:
+        key_column = key_columns[0]
+    else:
+        key_column = columns[0]
+        shape_warnings.append(KEY_FALLBACK_WARNING)
 
     languages = [column for column in columns if column != key_column]
     if not languages:
@@ -87,6 +92,7 @@ def parse_csv(data: bytes, source_name: str = "uploaded.csv") -> LocalizationTab
         languages=languages,
         duplicate_keys=duplicate_keys,
         encoding_warnings=warnings,
+        shape_warnings=shape_warnings,
         source_name=source_name,
     )
 
