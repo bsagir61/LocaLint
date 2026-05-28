@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BROKEN_SAMPLE = ROOT / "sample_data" / "broken_sample.csv"
+PO_SAMPLE = ROOT / "sample_data" / "sample.po"
 
 
 def run_cli(*args: str) -> subprocess.CompletedProcess[str]:
@@ -48,6 +49,24 @@ def test_cli_json_output_is_valid_json():
     assert payload["source_language"] == "en"
     assert payload["total_issues"] > 0
     assert isinstance(payload["issues"], list)
+
+
+def test_cli_po_scan_returns_exit_code_0():
+    result = run_cli(str(PO_SAMPLE))
+
+    assert result.returncode == 0
+    assert "LocaLint report" in result.stdout
+    assert "Source language: source" in result.stdout
+
+
+def test_cli_po_markdown_output_writes_file(tmp_path):
+    output_path = tmp_path / "po_report.md"
+
+    result = run_cli(str(PO_SAMPLE), "--format", "markdown", "--out", str(output_path))
+
+    assert result.returncode == 0
+    assert output_path.exists()
+    assert "# LocaLint QA Report" in output_path.read_text(encoding="utf-8")
 
 
 def test_cli_markdown_output_writes_file(tmp_path):

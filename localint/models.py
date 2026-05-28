@@ -31,6 +31,7 @@ class LocalizationRow(BaseModel):
 class LocalizationTable(BaseModel):
     rows: list[LocalizationRow]
     languages: list[str]
+    file_format: str = "unknown"
     source_language: str = "en"
     duplicate_keys: list[str] = Field(default_factory=list)
     encoding_warnings: list[str] = Field(default_factory=list)

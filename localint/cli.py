@@ -22,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="python -m localint.cli",
         description="Run LocaLint localization QA checks from the terminal.",
     )
-    parser.add_argument("file", help="CSV or JSON localization file to analyze.")
+    parser.add_argument("file", help="CSV, JSON, or PO localization file to analyze.")
     parser.add_argument("--source", help="Source language. Defaults to en when available, otherwise first locale.")
     parser.add_argument(
         "--format",

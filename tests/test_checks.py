@@ -1,5 +1,6 @@
 from localint.checks import extract_placeholders, run_checks
 from localint.models import LocalizationRow, LocalizationTable, Severity
+from localint.parsers import parse_po
 
 
 def test_placeholder_extraction_supports_game_patterns():
@@ -75,3 +76,19 @@ def test_placeholder_mismatch_reports_missing_and_extra_tokens():
 
     assert any(issue.severity == Severity.CRITICAL and "{count}" in issue.message for issue in issues)
     assert any(issue.severity == Severity.WARNING and "{total}" in issue.message for issue in issues)
+
+
+def test_po_missing_msgstr_is_reported_as_missing_translation():
+    table = parse_po(b'msgid "Exit"\nmsgstr ""\n', source_name="missing.po")
+
+    issues = run_checks(table, source_language="source")
+
+    assert any(issue.check == "Missing translation" and issue.severity == Severity.CRITICAL for issue in issues)
+
+
+def test_po_placeholder_mismatch_compares_msgid_to_msgstr():
+    table = parse_po(b'msgid "Player: {name}"\nmsgstr "Oyuncu:"\n', source_name="placeholder.po")
+
+    issues = run_checks(table, source_language="source")
+
+    assert any(issue.check == "Placeholder mismatch" and "{name}" in issue.message for issue in issues)

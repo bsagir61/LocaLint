@@ -1,6 +1,6 @@
 # LocaLint
 
-Local-first QA for CSV/JSON localization files.
+Local-first QA for CSV/JSON/PO localization files.
 
 LocaLint checks existing localization files before release. It looks for problems that are easy to miss in tables and exported string files:
 
@@ -12,6 +12,7 @@ LocaLint checks existing localization files before release. It looks for problem
 - formatting drift
 - JSON structure issues
 - CSV encoding warnings
+- PO msgid/msgstr issues
 
 LocaLint runs on your machine. It does not translate text, use AI, upload files, require login, store data in a database, or send telemetry.
 
@@ -23,7 +24,7 @@ Localization files can look fine until they reach a build. A missing `{count}` c
 
 LocaLint gives you a local QA pass for those issues.
 
-It was built with game localization workflows in mind, but it works for other CSV/JSON localization files too.
+It was built with game localization workflows in mind, but it works for other CSV, JSON, and PO localization files too.
 
 ---
 
@@ -33,6 +34,7 @@ LocaLint currently supports:
 
 - CSV localization tables
 - JSON localization dictionaries
+- PO files with common `msgid` / `msgstr` entries
 - Streamlit web UI
 - command-line usage
 - text, Markdown, JSON, and CSV reports
@@ -107,6 +109,18 @@ Basic scan:
 python -m localint.cli sample_data/broken_sample.csv --source en
 ```
 
+Scan JSON:
+
+```bash
+python -m localint.cli sample_data/sample.json --source en
+```
+
+Scan PO:
+
+```bash
+python -m localint.cli sample_data/sample.po
+```
+
 Limit terminal output:
 
 ```bash
@@ -166,6 +180,7 @@ python -m localint.cli --version
 | Punctuation drift | Missing or changed ending punctuation |
 | JSON structure issues | JSON files that do not match the expected localization shape |
 | CSV encoding warnings | Possible UTF-8 BOM issues |
+| PO parsing notes | PO files are mapped to source/target rows for QA |
 
 Severity levels:
 
@@ -218,6 +233,8 @@ The `sample_data/` folder includes:
 - `godot_sample.csv`: clean CSV example
 - `broken_sample.csv`: intentionally broken demo file
 - `sample.json`: flat JSON localization example
+- `sample.po`: clean PO example
+- `broken_sample.po`: intentionally broken PO example
 
 ---
 
@@ -241,7 +258,7 @@ python -m pytest
 Current test suite:
 
 ```text
-22 tests
+30 tests
 ```
 
 ---
@@ -284,11 +301,12 @@ sudo apt install python3-venv
 
 ## Current scope
 
-LocaLint is focused on local QA for CSV/JSON localization files.
+LocaLint is focused on local QA for CSV/JSON/PO localization files.
 
 It does not currently include:
 
-- `.po` file support
+- full gettext coverage
+- advanced PO plural-form evaluation
 - batch reports
 - glossary consistency checks
 - screenshot-based overflow prediction
