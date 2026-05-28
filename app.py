@@ -39,6 +39,7 @@ CHECK_EXPLANATIONS = {
     "Punctuation mismatch": "Prompt or emphasis punctuation changed at the end of the string.",
     "CSV encoding/BOM warning": "UTF-8 BOM can trip up Godot CSV localization imports in some workflows.",
 }
+FORMAT_LABELS = {"csv": "CSV", "json": "JSON", "po": "PO", "unknown": "Unknown"}
 
 
 st.set_page_config(page_title="LocaLint", page_icon="LC", layout="wide")
@@ -133,7 +134,7 @@ st.markdown(
     """
     <div class="loca-header">
       <div class="loca-title">LocaLint</div>
-      <div class="loca-subtitle">CSV/JSON localization QA before release.</div>
+      <div class="loca-subtitle">CSV/JSON/PO localization QA before release.</div>
       <div class="loca-hero-line">Catch broken localization files before they reach a build.</div>
     </div>
     """,
@@ -148,7 +149,7 @@ with st.sidebar:
     st.markdown(
         """
         <div class="trust-note">
-        <strong>CSV/JSON localization QA</strong><br>
+        <strong>CSV/JSON/PO localization QA</strong><br>
         Runs locally. No cloud upload. No login. No AI.<br>
         Standalone tool, not a native engine plugin yet.
         </div>
@@ -158,8 +159,8 @@ with st.sidebar:
     st.link_button("GitHub repository", REPOSITORY_URL, use_container_width=True)
     st.divider()
     upload = st.file_uploader(
-        "Upload CSV or JSON localization file",
-        type=["csv", "json"],
+        "Upload CSV, JSON, or PO localization file",
+        type=["csv", "json", "po"],
         help="Files are read locally by this Streamlit app.",
     )
     if st.button("Load Demo Sample", use_container_width=True, type="primary"):
@@ -198,7 +199,7 @@ if loaded is None:
     st.markdown(
         """
         <div class="hero-strip">
-          <strong>Upload a CSV or JSON localization file, or load the demo sample.</strong><br>
+          <strong>Upload a CSV, JSON, or PO localization file, or load the demo sample.</strong><br>
           <span class="muted">Files stay local. LocaLint does not translate text. It checks existing localization files for release-risk issues.</span>
         </div>
         """,
@@ -208,7 +209,7 @@ if loaded is None:
     if action_cols[0].button("Load Demo Sample", type="primary", use_container_width=True):
         st.session_state.load_demo_sample = True
         st.rerun()
-    action_cols[1].info("Use the sidebar to upload a CSV or JSON file.")
+    action_cols[1].info("Use the sidebar to upload a CSV, JSON, or PO file.")
     st.stop()
 
 filename, data = loaded
@@ -217,14 +218,19 @@ try:
 except ParserError as exc:
     st.error(f"Could not analyze `{filename}`.")
     st.write(str(exc))
-    st.info("Supported input: a CSV with a `key` column and locale columns, or a JSON object shaped like `{'KEY': {'en': 'Text'}}`.")
+    st.info("Supported input: a CSV table, JSON localization dictionary, or PO file with `msgid`/`msgstr` entries.")
     st.stop()
 
 if not table.languages:
     st.error("No language columns were detected. Add at least one locale column such as en, tr, or es.")
     st.stop()
 
-default_source_index = table.languages.index("en") if "en" in table.languages else 0
+if "en" in table.languages:
+    default_source_index = table.languages.index("en")
+elif "source" in table.languages:
+    default_source_index = table.languages.index("source")
+else:
+    default_source_index = 0
 with st.sidebar:
     source_language = st.selectbox("Source language", options=table.languages, index=default_source_index)
 
@@ -235,6 +241,10 @@ if source_language not in table.languages:
 target_languages = table.target_languages(source_language)
 if not target_languages:
     st.warning("No target languages detected for this source language. Add another locale column, or choose a different source language.")
+
+is_demo_sample = upload is None and st.session_state.load_demo_sample and filename == SAMPLE_PATH.name
+if is_demo_sample:
+    st.info("Demo sample loaded. This file is intentionally broken so you can see how LocaLint reports release-risk issues.")
 
 all_translation_values = [value for row in table.rows for value in row.translations.values()]
 if all_translation_values and all(not value.strip() for value in all_translation_values):
@@ -257,6 +267,14 @@ def esc(value: object) -> str:
 
 def list_text(values: list[str]) -> str:
     return ", ".join(values) if values else "None"
+
+
+def file_type_label(table_data) -> str:
+    return FORMAT_LABELS.get(table_data.file_format, table_data.file_format.upper())
+
+
+def entry_label(table_data) -> str:
+    return "entries" if table_data.file_format == "po" else "keys"
 
 
 def result_explanation(summary_data: dict[str, object]) -> tuple[str, str]:
@@ -295,7 +313,7 @@ overview_tab, issues_tab, preview_tab, export_tab, validation_tab = st.tabs(
 with overview_tab:
     st.subheader("Overview")
     metric_cols = st.columns(5)
-    metric_cols[0].metric("Total keys", summary["total_keys"])
+    metric_cols[0].metric(f"Total {entry_label(table)}", summary["total_keys"])
     metric_cols[1].metric("Languages", len(summary["languages_detected"]))
     metric_cols[2].metric("Target locales", len(target_languages))
     metric_cols[3].metric("Total issues", summary["total_issues"])
@@ -311,6 +329,7 @@ with overview_tab:
         f"""
         <div class="detail-grid">
           <div class="detail-item"><div class="detail-label">Source file</div><div class="detail-value">{esc(filename)}</div></div>
+          <div class="detail-item"><div class="detail-label">File type</div><div class="detail-value">{esc(file_type_label(table))}</div></div>
           <div class="detail-item"><div class="detail-label">Source language</div><div class="detail-value">{esc(source_language)}</div></div>
           <div class="detail-item"><div class="detail-label">Detected languages</div><div class="detail-value">{esc(list_text(table.languages))}</div></div>
           <div class="detail-item"><div class="detail-label">Target languages</div><div class="detail-value">{esc(list_text(target_languages))}</div></div>
@@ -451,14 +470,22 @@ with issues_tab:
 with preview_tab:
     st.subheader("File Preview")
     st.write(f"**File name:** `{filename}`")
-    st.write(f"**Detected columns:** {', '.join(f'`{column}`' for column in preview_frame.columns)}")
-    st.write(f"**Detected locales:** {list_text(table.languages)}")
+    st.write(f"**File type:** {file_type_label(table)}")
+    if table.file_format == "po":
+        st.write(f"**PO entry rows:** {table.total_keys}")
+        st.write("**PO columns:** `key`, `source`, `target`")
+    else:
+        st.write(f"**Detected columns:** {', '.join(f'`{column}`' for column in preview_frame.columns)}")
+        st.write(f"**Detected locales:** {list_text(table.languages)}")
 
     unusual_shape = file_shape_warnings(table, source_language, target_languages)
     if unusual_shape:
         st.warning("File shape notes: " + " ".join(unusual_shape))
     else:
-        st.success("File shape looks like a standard key-plus-locales localization table.")
+        if table.file_format == "po":
+            st.success("PO file shape looks usable for msgid/msgstr QA.")
+        else:
+            st.success("File shape looks like a standard key-plus-locales localization table.")
 
     st.dataframe(preview_frame, use_container_width=True, hide_index=True)
 
@@ -484,13 +511,13 @@ with validation_tab:
     st.subheader("Who this is for")
     st.markdown(
         """
-- Developers working with CSV/JSON localization files
+- Developers working with CSV/JSON/PO localization files
 - Indie developers and small teams
 - Teams using spreadsheet-style localization workflows
 - Translators or teammates reviewing localization tables
 - Developers who want a local pre-release QA pass
 
-LocaLint is not a native Godot, Unity, or Unreal plugin yet. Current support means exported CSV/JSON localization files.
+LocaLint is not a native Godot, Unity, or Unreal plugin yet. Current support means exported CSV/JSON files and PO files.
         """
     )
 
@@ -503,6 +530,7 @@ LocaLint is not a native Godot, Unity, or Unreal plugin yet. Current support mea
 - Are keys, locales, and source language detected correctly?
 - Are the CLI output and export files useful for your workflow?
 - Which CSV or JSON shapes should LocaLint handle better?
+- Which PO cases should LocaLint handle better?
 - Does the length warning ratio match your UI constraints?
         """
     )
@@ -510,7 +538,7 @@ LocaLint is not a native Godot, Unity, or Unreal plugin yet. Current support mea
     st.subheader("Current positioning")
     st.markdown(
         """
-LocaLint is a local-first QA tool for CSV/JSON localization files.
+LocaLint is a local-first QA tool for CSV/JSON/PO localization files.
 
 It does not translate text. It does not use AI. It does not upload files. It checks existing localization files for release-risk issues.
         """
@@ -519,12 +547,13 @@ It does not translate text. It does not use AI. It does not upload files. It che
     st.subheader("Future directions")
     st.markdown(
         """
+- Better PO support
 - Better support for real-world CSV/JSON shapes
 - Batch checking multiple localization files
 - Glossary consistency checks
 - Engine-specific import notes and presets
 - GitHub Actions / CI examples
-- Native engine plugins later, only if users need them
+- Hosted demo only if it is useful and keeps the no-upload expectation clear
         """
     )
 

@@ -1,6 +1,6 @@
 import pytest
 
-from localint.parsers import KEY_FALLBACK_WARNING, ParserError, parse_csv, parse_json, parse_upload
+from localint.parsers import KEY_FALLBACK_WARNING, ParserError, parse_csv, parse_json, parse_po, parse_upload
 
 
 def test_csv_parser_reads_languages_rows_and_duplicates():
@@ -34,6 +34,58 @@ def test_json_parser_reads_flat_dictionary():
     assert table.total_keys == 2
     assert table.rows[0].key == "START_GAME"
     assert table.rows[1].translations["tr"] == "Jeton"
+
+
+def test_po_parser_reads_basic_entries_and_plural_forms():
+    data = (
+        b'msgctxt "menu"\n'
+        b'msgid "Start Game"\n'
+        b'msgstr "Oyuna Basla"\n'
+        b"\n"
+        b'msgid "You have {count} coin"\n'
+        b'msgid_plural "You have {count} coins"\n'
+        b'msgstr[0] "{count} jetonun var"\n'
+        b'msgstr[1] "{count} jetonun var"\n'
+    )
+
+    table = parse_po(data, source_name="sample.po")
+
+    assert table.file_format == "po"
+    assert table.languages == ["source", "target"]
+    assert table.total_keys == 3
+    assert table.rows[0].key == "menu::Start Game"
+    assert table.rows[0].translations["source"] == "Start Game"
+    assert table.rows[0].translations["target"] == "Oyuna Basla"
+    assert table.rows[1].key.endswith("[plural 0]")
+    assert table.rows[2].key.endswith("[plural 1]")
+
+
+def test_po_parser_handles_multiline_strings_and_escapes():
+    data = (
+        b'msgid ""\n'
+        b'"Line one\\n"\n'
+        b'"Line two"\n'
+        b'msgstr ""\n'
+        b'"Satir bir\\n"\n'
+        b'"Satir iki"\n'
+    )
+
+    table = parse_po(data, source_name="multiline.po")
+
+    assert table.rows[0].translations["source"] == "Line one\nLine two"
+    assert table.rows[0].translations["target"] == "Satir bir\nSatir iki"
+
+
+def test_po_parser_reports_duplicate_context_msgid():
+    data = (
+        b'msgctxt "menu"\nmsgid "Duplicate"\nmsgstr "Birinci"\n'
+        b"\n"
+        b'msgctxt "menu"\nmsgid "Duplicate"\nmsgstr "Ikinci"\n'
+    )
+
+    table = parse_po(data, source_name="duplicate.po")
+
+    assert table.duplicate_keys == ["menu::Duplicate"]
 
 
 def test_empty_csv_gets_clear_error():
@@ -70,6 +122,11 @@ def test_json_invalid_shape_gets_clear_error():
 def test_json_empty_object_gets_clear_error():
     with pytest.raises(ParserError, match="no localization entries"):
         parse_json(b"{}", source_name="empty.json")
+
+
+def test_invalid_po_gets_clear_error():
+    with pytest.raises(ParserError, match="no usable msgid/msgstr entries"):
+        parse_po(b"# comments only\n", source_name="empty.po")
 
 
 def test_unsupported_extension_gets_clear_error():

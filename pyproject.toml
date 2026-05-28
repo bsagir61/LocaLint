@@ -1,7 +1,7 @@
 [project]
 name = "localint"
-version = "0.3.0"
-description = "LocaLint: game localization QA before release."
+version = "0.4.0"
+description = "LocaLint: localization QA before release."
 requires-python = ">=3.11"
 dependencies = [
   "streamlit>=1.36",

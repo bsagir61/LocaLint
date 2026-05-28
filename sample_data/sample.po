@@ -1,0 +1,23 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: LocaLint sample\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: ui/menu
+msgctxt "menu"
+msgid "Start Game"
+msgstr "Oyuna Basla"
+
+#: ui/menu
+msgid "Exit"
+msgstr "Cikis"
+
+#: ui/hud
+msgid "Player: {name}"
+msgstr "Oyuncu: {name}"
+
+#: ui/hud
+msgid "You have {count} coin"
+msgid_plural "You have {count} coins"
+msgstr[0] "{count} jetonun var"
+msgstr[1] "{count} jetonun var"

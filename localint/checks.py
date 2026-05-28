@@ -88,7 +88,7 @@ def run_checks(
         display_key = row.key if row.key.strip() else "<empty>"
         source_text = row.translations.get(source_language, "")
 
-        if "invalid_keys" in enabled and (not row.key.strip() or not KEY_RE.match(row.key)):
+        if table.file_format != "po" and "invalid_keys" in enabled and (not row.key.strip() or not KEY_RE.match(row.key)):
             issues.append(
                 Issue(
                     severity=Severity.WARNING,

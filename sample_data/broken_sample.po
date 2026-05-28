@@ -1,0 +1,34 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: LocaLint broken sample\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: ui/menu
+msgid "Exit"
+msgstr ""
+
+#: ui/hud
+msgid "Player: {name}"
+msgstr "Oyuncu:"
+
+#: ui/menu
+msgid "Settings"
+msgstr "Settings"
+
+#: ui/menu
+msgctxt "menu"
+msgid "Duplicate"
+msgstr "Birinci"
+
+#: ui/menu
+msgctxt "menu"
+msgid "Duplicate"
+msgstr "Ikinci"
+
+#: ui/dialog
+msgid "Line one\nLine two"
+msgstr "Satir bir"
+
+#: ui/dialog
+msgid "Continue?"
+msgstr "Devam"
