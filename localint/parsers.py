@@ -10,14 +10,17 @@ from typing import Any
 
 import pandas as pd
 
+from localint.locales import is_locale_like, is_metadata_column, normalize_locale_code
 from localint.models import LocalizationRow, LocalizationTable
 from localint.utils import as_text
 
 
 UTF8_BOM = b"\xef\xbb\xbf"
 KEY_FALLBACK_WARNING = "No column named 'key' was found. LocaLint is using the first column as localization keys."
+METADATA_COLUMNS_WARNING = "Ignored metadata columns: {columns}."
+AMBIGUOUS_LOCALE_WARNING = "Some checked columns do not look like standard locale codes: {columns}."
 PO_FIELD_RE = re.compile(r'^(msgctxt|msgid|msgid_plural|msgstr)(?:\[(\d+)\])?\s+(".*")\s*$')
-PO_FORMAT_WARNING = "PO file parsed as source/target rows from msgid/msgstr. Comments and headers are ignored."
+PO_FORMAT_WARNING = "PO file detected. Source strings come from msgid; target strings come from msgstr."
 PO_CONTEXT_WARNING = "PO context is included in keys when msgctxt is present."
 PO_PLURAL_WARNING = "PO plural entries are shown as separate rows using msgstr[n]."
 
@@ -77,9 +80,29 @@ def parse_csv(data: bytes, source_name: str = "uploaded.csv") -> LocalizationTab
         key_column = columns[0]
         shape_warnings.append(KEY_FALLBACK_WARNING)
 
-    languages = [column for column in columns if column != key_column]
+    languages: list[str] = []
+    ignored_columns: list[str] = []
+    ambiguous_locale_columns: list[str] = []
+    for column in columns:
+        if column == key_column:
+            continue
+        values = frame[column].tolist() if column in frame else []
+        if is_metadata_column(column, values):
+            ignored_columns.append(column)
+            continue
+        languages.append(column)
+        if not is_locale_like(column):
+            ambiguous_locale_columns.append(column)
+
+    if ignored_columns:
+        shape_warnings.append(METADATA_COLUMNS_WARNING.format(columns=", ".join(ignored_columns)))
+    if ambiguous_locale_columns:
+        shape_warnings.append(AMBIGUOUS_LOCALE_WARNING.format(columns=", ".join(ambiguous_locale_columns)))
+
     if not languages:
-        raise ParserError("CSV needs at least one language column after the key column, such as en or tr.")
+        raise ParserError(
+            "CSV needs at least one language column after the key column, such as en, en-US, tr, or pt-BR."
+        )
 
     if frame.empty:
         raise ParserError("This CSV has headers but no rows. Add at least one localization key to check.")
@@ -97,6 +120,8 @@ def parse_csv(data: bytes, source_name: str = "uploaded.csv") -> LocalizationTab
         rows=rows,
         languages=languages,
         file_format="csv",
+        columns=columns,
+        ignored_columns=ignored_columns,
         duplicate_keys=duplicate_keys,
         encoding_warnings=warnings,
         shape_warnings=shape_warnings,
@@ -140,7 +165,13 @@ def parse_json(data: bytes, source_name: str = "uploaded.json") -> LocalizationT
     if not languages:
         raise ParserError("JSON needs at least one language code, such as en or tr.")
 
-    return LocalizationTable(rows=rows, languages=languages, file_format="json", source_name=source_name)
+    return LocalizationTable(
+        rows=rows,
+        languages=languages,
+        file_format="json",
+        columns=["key", *languages],
+        source_name=source_name,
+    )
 
 
 def parse_po(data: bytes, source_name: str = "uploaded.po") -> LocalizationTable:
@@ -157,6 +188,7 @@ def parse_po(data: bytes, source_name: str = "uploaded.po") -> LocalizationTable
     entry_keys: list[str] = []
     saw_context = False
     saw_plural = False
+    target_language = "target"
 
     for entry in entries:
         msgid = entry.get("msgid")
@@ -165,6 +197,9 @@ def parse_po(data: bytes, source_name: str = "uploaded.po") -> LocalizationTable
         if msgid is None:
             raise ParserError("Invalid PO file. Each translation entry needs a msgid.")
         if msgid == "" and msgctxt is None and msgid_plural is None:
+            header_language = _po_metadata_language(entry.get("msgstr") or "")
+            if header_language:
+                target_language = normalize_locale_code(header_language)
             continue
 
         base_key = _po_key(msgctxt, msgid)
@@ -181,7 +216,7 @@ def parse_po(data: bytes, source_name: str = "uploaded.po") -> LocalizationTable
                 rows.append(
                     LocalizationRow(
                         key=f"{base_key} [plural {plural_index}]",
-                        translations={"source": source_text, "target": target_text},
+                        translations={"source": source_text, target_language: target_text},
                         row_number=entry.get("line_number"),
                     )
                 )
@@ -190,7 +225,7 @@ def parse_po(data: bytes, source_name: str = "uploaded.po") -> LocalizationTable
         rows.append(
             LocalizationRow(
                 key=base_key,
-                translations={"source": msgid, "target": entry.get("msgstr") or ""},
+                translations={"source": msgid, target_language: entry.get("msgstr") or ""},
                 row_number=entry.get("line_number"),
             )
         )
@@ -208,8 +243,9 @@ def parse_po(data: bytes, source_name: str = "uploaded.po") -> LocalizationTable
 
     return LocalizationTable(
         rows=rows,
-        languages=["source", "target"],
+        languages=["source", target_language],
         file_format="po",
+        columns=["key", "source", target_language],
         duplicate_keys=duplicate_keys,
         shape_warnings=shape_warnings,
         source_name=source_name,
@@ -314,6 +350,17 @@ def _po_plural_indices(plural_targets: dict[int, str]) -> list[int]:
         return [0, 1]
     max_index = max(max(plural_targets), 1)
     return list(range(max_index + 1))
+
+
+def _po_metadata_language(header_text: str) -> str | None:
+    for raw_line in header_text.splitlines():
+        if ":" not in raw_line:
+            continue
+        name, value = raw_line.split(":", 1)
+        if name.strip().lower() == "language":
+            language = value.strip()
+            return language or None
+    return None
 
 
 def table_to_frame(table: LocalizationTable) -> pd.DataFrame:

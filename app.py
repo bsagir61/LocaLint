@@ -7,9 +7,19 @@ import pandas as pd
 import streamlit as st
 
 from localint.checks import CHECKS, run_checks
+from localint.locales import (
+    choose_default_source_locale,
+    display_locale_codes,
+    locale_label,
+    locale_list_label,
+    normalization_notes,
+    normalize_locale_code,
+    rtl_locales,
+)
 from localint.parsers import ParserError, parse_upload, table_to_frame
 from localint.report import (
     issues_to_dataframe,
+    release_gate_explanation,
     report_to_markdown,
     summarize,
     summary_to_html,
@@ -123,6 +133,20 @@ st.markdown(
       }
       .detail-label { color: #9aa4af; font-size: .82rem; margin-bottom: 4px; }
       .detail-value { font-weight: 720; overflow-wrap: anywhere; }
+      .language-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin: 8px 0 14px;
+      }
+      .language-chip {
+        border: 1px solid rgba(125, 133, 144, .22);
+        border-radius: 999px;
+        padding: 5px 10px;
+        background: rgba(125, 133, 144, .09);
+        font-size: .88rem;
+        line-height: 1.3;
+      }
       .muted { color: #9aa4af; }
       .trust-note { font-size: .92rem; line-height: 1.45; color: #c7d0d9; }
     </style>
@@ -225,20 +249,27 @@ if not table.languages:
     st.error("No language columns were detected. Add at least one locale column such as en, tr, or es.")
     st.stop()
 
-if "en" in table.languages:
-    default_source_index = table.languages.index("en")
-elif "source" in table.languages:
-    default_source_index = table.languages.index("source")
-else:
-    default_source_index = 0
+default_source = choose_default_source_locale(table.languages)
+if default_source is None:
+    st.error("No source language could be selected. Add at least one locale column such as en, en-US, tr, or pt-BR.")
+    st.stop()
+default_source_index = table.languages.index(default_source)
 with st.sidebar:
-    source_language = st.selectbox("Source language", options=table.languages, index=default_source_index)
+    source_language = st.selectbox(
+        "Source language",
+        options=table.languages,
+        index=default_source_index,
+        format_func=locale_label,
+    )
 
 if source_language not in table.languages:
-    st.error(f"Selected source language `{source_language}` was not found. Choose one of: {', '.join(table.languages)}.")
+    available = ", ".join(display_locale_codes(table.languages))
+    st.error(f"Source language `{normalize_locale_code(source_language)}` was not found. Available locales: {available}.")
     st.stop()
 
 target_languages = table.target_languages(source_language)
+rtl_target_languages = rtl_locales(target_languages)
+locale_normalizations = normalization_notes(table.languages)
 if not target_languages:
     st.warning("No target languages detected for this source language. Add another locale column, or choose a different source language.")
 
@@ -265,8 +296,8 @@ def esc(value: object) -> str:
     return html_lib.escape(str(value or ""))
 
 
-def list_text(values: list[str]) -> str:
-    return ", ".join(values) if values else "None"
+def locale_text(values: list[str], limit: int | None = None) -> str:
+    return locale_list_label(values, limit=limit)
 
 
 def file_type_label(table_data) -> str:
@@ -278,20 +309,8 @@ def entry_label(table_data) -> str:
 
 
 def result_explanation(summary_data: dict[str, object]) -> tuple[str, str]:
-    if int(summary_data["critical_issues"]):
-        return (
-            "Critical localization issues need attention before release.",
-            "The file has missing text, broken variables, duplicate keys, or layout risk that can affect a build.",
-        )
-    if int(summary_data["warning_issues"]):
-        return (
-            "No critical issues found, but warnings should be reviewed.",
-            "The file is probably loadable, but some strings may still look unfinished, overflow UI, or drift from the source.",
-        )
-    return (
-        "No critical or warning issues found.",
-        "The selected checks did not find release-blocking localization problems.",
-    )
+    gate = str(summary_data["release_gate"])
+    return f"Release gate: {gate}", release_gate_explanation(gate)
 
 
 def file_shape_warnings(table_data, selected_source: str, selected_targets: list[str]) -> list[str]:
@@ -312,12 +331,13 @@ overview_tab, issues_tab, preview_tab, export_tab, validation_tab = st.tabs(
 
 with overview_tab:
     st.subheader("Overview")
-    metric_cols = st.columns(5)
+    metric_cols = st.columns(6)
     metric_cols[0].metric(f"Total {entry_label(table)}", summary["total_keys"])
     metric_cols[1].metric("Languages", len(summary["languages_detected"]))
     metric_cols[2].metric("Target locales", len(target_languages))
     metric_cols[3].metric("Total issues", summary["total_issues"])
     metric_cols[4].metric("Health", f"{summary['health_score']}/100")
+    metric_cols[5].metric("Release Gate", summary["release_gate"])
 
     severity_cols = st.columns(3)
     severity_cols[0].metric("Critical", summary["critical_issues"])
@@ -330,43 +350,65 @@ with overview_tab:
         <div class="detail-grid">
           <div class="detail-item"><div class="detail-label">Source file</div><div class="detail-value">{esc(filename)}</div></div>
           <div class="detail-item"><div class="detail-label">File type</div><div class="detail-value">{esc(file_type_label(table))}</div></div>
-          <div class="detail-item"><div class="detail-label">Source language</div><div class="detail-value">{esc(source_language)}</div></div>
-          <div class="detail-item"><div class="detail-label">Detected languages</div><div class="detail-value">{esc(list_text(table.languages))}</div></div>
-          <div class="detail-item"><div class="detail-label">Target languages</div><div class="detail-value">{esc(list_text(target_languages))}</div></div>
+          <div class="detail-item"><div class="detail-label">Source locale</div><div class="detail-value">{esc(locale_label(source_language))}</div></div>
+          <div class="detail-item"><div class="detail-label">Detected locales</div><div class="detail-value">{esc(locale_text(table.languages, limit=4))}</div></div>
+          <div class="detail-item"><div class="detail-label">Target locales</div><div class="detail-value">{esc(locale_text(target_languages, limit=4))}</div></div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+    st.markdown("**Language Summary**")
+    target_chips = "".join(f'<span class="language-chip">{esc(locale_label(locale))}</span>' for locale in target_languages[:8])
+    if len(target_languages) > 8:
+        target_chips += f'<span class="language-chip">+{len(target_languages) - 8} more</span>'
+    st.markdown(
+        f"""
+        <div class="language-list">
+          <span class="language-chip"><strong>Source:</strong> {esc(locale_label(source_language))}</span>
+          {target_chips or '<span class="language-chip">No target locales</span>'}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if rtl_target_languages:
+        st.info(
+            f"RTL locale detected: {', '.join(rtl_target_languages)}. Layout should be checked in-game or in-app."
+        )
 
     result_title, result_body = result_explanation(summary)
-    if summary["critical_issues"]:
+    if summary["release_gate"] == "BLOCK":
         st.error(result_title)
-    elif summary["warning_issues"]:
+    elif summary["release_gate"] == "REVIEW":
         st.warning(result_title)
     else:
         st.success(result_title)
     st.write(f"**Result:** {result_body}")
 
-    st.subheader("Next Fixes")
+    st.subheader("Fix Plan")
     if not issues:
         st.write("No fixes needed for the selected checks.")
     else:
-        top_issues = sorted(issues, key=lambda issue: (SEVERITY_ORDER[issue.severity.value], issue.key, issue.locale))[:5]
-        for index, issue in enumerate(top_issues, start=1):
-            meta = SEVERITY_META[issue.severity.value]
-            locale_suffix = f"({esc(issue.locale)})" if issue.locale else ""
-            st.markdown(
-                f"""
-                <div class="issue-card">
-                  <span class="severity-badge {meta['class']}">{meta['label']}</span>
-                  <span class="issue-title">{index}. {esc(issue.key)} {locale_suffix}</span>
-                  <div class="issue-meta">{esc(issue.check)}</div>
-                  <div class="issue-text">{esc(issue.message)}</div>
-                  <div class="suggestion"><strong>Suggested fix:</strong> {esc(issue.suggestion)}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+        ordered_plan = sorted(issues, key=lambda issue: (SEVERITY_ORDER[issue.severity.value], issue.key, issue.locale))[:8]
+        for severity in ["CRITICAL", "WARNING", "INFO"]:
+            severity_issues = [issue for issue in ordered_plan if issue.severity.value == severity]
+            if not severity_issues:
+                continue
+            st.write(f"**{severity}**")
+            for issue in severity_issues:
+                meta = SEVERITY_META[issue.severity.value]
+                locale_suffix = f"({esc(locale_label(issue.locale))})" if issue.locale else "(file/key)"
+                st.markdown(
+                    f"""
+                    <div class="issue-card">
+                      <span class="severity-badge {meta['class']}">{meta['label']}</span>
+                      <span class="issue-title">{esc(issue.key)} {locale_suffix}</span>
+                      <div class="issue-meta">{esc(issue.check)}</div>
+                      <div class="issue-text">{esc(issue.message)}</div>
+                      <div class="suggestion"><strong>Suggested fix:</strong> {esc(issue.suggestion)}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
 with issues_tab:
     st.subheader("Issues")
@@ -383,7 +425,12 @@ with issues_tab:
         locale_options = sorted(locale for locale in issues_frame["locale"].dropna().unique().tolist() if locale)
         issue_type_options = sorted(issues_frame["check"].dropna().unique().tolist())
         selected_severities = filters[0].multiselect("Severity", severity_options, default=severity_options)
-        selected_locales = filters[1].multiselect("Locale", locale_options, default=locale_options)
+        selected_locales = filters[1].multiselect(
+            "Locale",
+            locale_options,
+            default=locale_options,
+            format_func=locale_label,
+        )
         selected_issue_types = filters[2].multiselect("Issue type", issue_type_options, default=issue_type_options)
         key_search = filters[3].text_input("Search by key")
 
@@ -428,7 +475,9 @@ with issues_tab:
                     "target_text": "Target",
                 }
             )
-            display_frame["Locale"] = display_frame["Locale"].replace("", "Key-level")
+            display_frame["Locale"] = display_frame["Locale"].apply(
+                lambda locale: locale_label(locale) if locale else "Key-level"
+            )
             st.dataframe(
                 display_frame.style.apply(color_severity, axis=1),
                 use_container_width=True,
@@ -451,12 +500,12 @@ with issues_tab:
         else:
             for _, row in sorted_filtered.head(25).iterrows():
                 meta = SEVERITY_META.get(row["severity"], SEVERITY_META["INFO"])
-                locale_label = f" / {esc(row['locale'])}" if row["locale"] else " / Key-level"
+                display_locale = f" / {esc(locale_label(row['locale']))}" if row["locale"] else " / Key-level"
                 st.markdown(
                     f"""
                     <div class="issue-card">
                       <span class="severity-badge {meta['class']}">{meta['label']}</span>
-                      <span class="issue-title">{esc(row['key'])}{locale_label}</span>
+                      <span class="issue-title">{esc(row['key'])}{display_locale}</span>
                       <div class="issue-meta">{esc(row['check'])} - {esc(meta['hint'])}</div>
                       <div class="issue-text">{esc(row['message'])}</div>
                       <div class="suggestion"><strong>Suggested fix:</strong> {esc(row['suggestion'])}</div>
@@ -471,12 +520,24 @@ with preview_tab:
     st.subheader("File Preview")
     st.write(f"**File name:** `{filename}`")
     st.write(f"**File type:** {file_type_label(table)}")
+    st.write(f"**Detected source locale:** {locale_label(source_language)}")
+    st.write(f"**Target locales:** {locale_text(target_languages)}")
     if table.file_format == "po":
         st.write(f"**PO entry rows:** {table.total_keys}")
-        st.write("**PO columns:** `key`, `source`, `target`")
+        st.write("PO file detected. Source strings come from `msgid`; target strings come from `msgstr`.")
+        st.write(f"**PO columns:** {', '.join(f'`{column}`' for column in table.columns or preview_frame.columns)}")
     else:
-        st.write(f"**Detected columns:** {', '.join(f'`{column}`' for column in preview_frame.columns)}")
-        st.write(f"**Detected locales:** {list_text(table.languages)}")
+        detected_columns = table.columns or list(preview_frame.columns)
+        st.write(f"**Detected columns:** {', '.join(f'`{column}`' for column in detected_columns)}")
+        st.write(f"**Detected locales:** {locale_text(table.languages)}")
+    if locale_normalizations:
+        st.info("Locale codes normalized for display: " + ", ".join(locale_normalizations) + ".")
+    if rtl_target_languages:
+        st.info(
+            f"RTL locale detected: {', '.join(rtl_target_languages)}. Layout should be checked in-game or in-app."
+        )
+    if table.ignored_columns:
+        st.info(f"Ignored metadata columns: {', '.join(table.ignored_columns)}.")
 
     unusual_shape = file_shape_warnings(table, source_language, target_languages)
     if unusual_shape:
@@ -506,6 +567,11 @@ with export_tab:
     col_c.download_button("Download summary HTML", summary_html, "localint_summary.html", "text/html")
     st.markdown("**Markdown summary**  \nFor a short checklist-style summary.")
     st.download_button("Download summary Markdown", summary_md, "localint_summary.md", "text/markdown")
+    st.divider()
+    st.subheader("Baseline Workflow")
+    st.write(
+        "Baseline support is CLI-only in this release. Save current known issues with `--write-baseline`, then compare later with `--baseline` and `--fail-on-new-critical`."
+    )
 
 with validation_tab:
     st.subheader("Who this is for")
@@ -526,6 +592,9 @@ LocaLint is not a native Godot, Unity, or Unreal plugin yet. Current support mea
         """
 - Did LocaLint catch an issue you would have missed manually?
 - Is the report clear enough to send to a translator or teammate?
+- Does the Release Gate result match your release policy?
+- Does the Fix Plan show the right issues first?
+- Would the baseline workflow help separate known issues from new issues?
 - Are any warnings too noisy for your files?
 - Are keys, locales, and source language detected correctly?
 - Are the CLI output and export files useful for your workflow?
@@ -540,7 +609,7 @@ LocaLint is not a native Godot, Unity, or Unreal plugin yet. Current support mea
         """
 LocaLint is a local-first QA tool for CSV/JSON/PO localization files.
 
-It does not translate text. It does not use AI. It does not upload files. It checks existing localization files for release-risk issues.
+It does not translate text. It does not use AI. It does not upload files. It checks existing localization files for release-risk issues and gives a deterministic release gate.
         """
     )
 
@@ -548,6 +617,7 @@ It does not translate text. It does not use AI. It does not upload files. It che
     st.markdown(
         """
 - Better PO support
+- Baseline comparison in the UI if it stays simple
 - Better support for real-world CSV/JSON shapes
 - Batch checking multiple localization files
 - Glossary consistency checks

@@ -1,6 +1,6 @@
 [project]
 name = "localint"
-version = "0.4.0"
+version = "0.5.0"
 description = "LocaLint: localization QA before release."
 requires-python = ">=3.11"
 dependencies = [
