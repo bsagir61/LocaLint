@@ -5,6 +5,7 @@ from collections import Counter
 
 import pandas as pd
 
+from localint.locales import display_locale_codes, normalize_locale_code
 from localint.models import Issue, LocalizationTable, Severity
 
 
@@ -20,6 +21,9 @@ REPORT_COLUMNS = [
 ]
 
 SEVERITY_ORDER = {Severity.CRITICAL: 0, Severity.WARNING: 1, Severity.INFO: 2}
+RELEASE_GATE_PASS = "PASS"
+RELEASE_GATE_REVIEW = "REVIEW"
+RELEASE_GATE_BLOCK = "BLOCK"
 
 
 def issues_to_dataframe(issues: list[Issue]) -> pd.DataFrame:
@@ -46,46 +50,84 @@ def summarize(table: LocalizationTable, issues: list[Issue], source_language: st
         "warning_issues": warning,
         "info_issues": info,
         "health_score": health_score,
+        "release_gate": release_gate_for_counts(critical, warning, info),
     }
 
 
-def report_to_markdown(table: LocalizationTable, issues: list[Issue], source_language: str) -> str:
+def release_gate_for_counts(critical: int, warning: int, info: int) -> str:
+    if critical > 0:
+        return RELEASE_GATE_BLOCK
+    if warning > 0 or info > 0:
+        return RELEASE_GATE_REVIEW
+    return RELEASE_GATE_PASS
+
+
+def release_gate_explanation(gate: str) -> str:
+    if gate == RELEASE_GATE_BLOCK:
+        return "Critical issues exist and should block release."
+    if gate == RELEASE_GATE_REVIEW:
+        return "No critical issues found, but warnings or info notes should be reviewed."
+    return "No critical, warning, or info issues found."
+
+
+def report_to_markdown(
+    table: LocalizationTable,
+    issues: list[Issue],
+    source_language: str,
+    baseline_result: dict[str, object] | None = None,
+) -> str:
     summary = summarize(table, issues, source_language)
     ordered_issues = sort_issues_for_action(issues)
     frame = issues_to_dataframe(ordered_issues)
-    targets = table.target_languages(source_language)
+    targets = display_locale_codes(table.target_languages(source_language))
+    detected_languages = display_locale_codes(summary["languages_detected"])
     lines = [
         "# LocaLint QA Report",
         "",
         "## Executive Summary",
+        "",
+        f"**Release gate:** {summary['release_gate']}",
         "",
         f"**Health score:** {summary['health_score']}/100",
         "",
         "| Metric | Value |",
         "| --- | --- |",
         f"| Source file | {table.source_name} |",
-        f"| Source language | {source_language} |",
+        f"| Source language | {normalize_locale_code(source_language)} |",
         f"| Target languages | {', '.join(targets) or 'None'} |",
         f"| Total keys | {summary['total_keys']} |",
-        f"| Languages detected | {', '.join(summary['languages_detected'])} |",
+        f"| Languages detected | {', '.join(detected_languages)} |",
         f"| Total issues | {summary['total_issues']} |",
         f"| Critical issues | {summary['critical_issues']} |",
         f"| Warning issues | {summary['warning_issues']} |",
         f"| Info issues | {summary['info_issues']} |",
+        f"| Release gate | {summary['release_gate']} |",
+    ]
+    if baseline_result:
+        lines.extend(
+            [
+                f"| Known issues | {baseline_result['known_count']} |",
+                f"| New issues | {baseline_result['new_count']} |",
+                f"| New critical issues | {baseline_result['new_critical_count']} |",
+            ]
+        )
+    lines.extend(
+        [
         "",
         "## What This Means",
         "",
         _meaning_for_summary(summary),
         "",
-        "## Next Fixes",
+        "## Fix Plan",
         "",
-    ]
+        ]
+    )
     top_issues = ordered_issues[:5]
     if not top_issues:
         lines.append("No fixes needed for the selected checks.")
     else:
         for index, issue in enumerate(top_issues, start=1):
-            locale = f" ({issue.locale})" if issue.locale else ""
+            locale = f" ({normalize_locale_code(issue.locale)})" if issue.locale else ""
             lines.append(f"{index}. **{issue.severity.value}** - `{issue.key}`{locale}: {issue.message}")
             if issue.suggestion:
                 lines.append(f"   Suggestion: {issue.suggestion}")
@@ -116,17 +158,7 @@ def sort_issues_for_action(issues: list[Issue]) -> list[Issue]:
 
 
 def _meaning_for_summary(summary: dict[str, object]) -> str:
-    if int(summary["critical_issues"]) > 0:
-        return (
-            "Critical issues should be fixed before release because they can create missing text, broken "
-            "runtime formatting, or ambiguous localization keys."
-        )
-    if int(summary["warning_issues"]) > 0:
-        return (
-            "No critical issues were found, but warnings should be reviewed for layout risk, untranslated "
-            "strings, or inconsistent formatting."
-        )
-    return "The selected checks did not find release-blocking localization problems."
+    return release_gate_explanation(str(summary["release_gate"]))
 
 
 def summary_to_markdown(table: LocalizationTable, issues: list[Issue], source_language: str) -> str:
@@ -135,10 +167,12 @@ def summary_to_markdown(table: LocalizationTable, issues: list[Issue], source_la
         [
             "# LocaLint Summary",
             "",
+            f"Release gate: **{summary['release_gate']}**",
+            "",
             f"Health score: **{summary['health_score']}/100**",
             "",
             f"- Total keys: {summary['total_keys']}",
-            f"- Languages detected: {', '.join(summary['languages_detected'])}",
+            f"- Languages detected: {', '.join(display_locale_codes(summary['languages_detected']))}",
             f"- Total issues: {summary['total_issues']}",
             f"- Critical issues: {summary['critical_issues']}",
             f"- Warning issues: {summary['warning_issues']}",
@@ -162,10 +196,11 @@ def summary_to_html(table: LocalizationTable, issues: list[Issue], source_langua
 </head>
 <body>
   <h1>LocaLint Summary</h1>
+  <p><strong>Release gate:</strong> {summary["release_gate"]}</p>
   <p class="score">{summary["health_score"]}/100</p>
   <ul>
     <li>Total keys: {summary["total_keys"]}</li>
-    <li>Languages detected: {html.escape(", ".join(summary["languages_detected"]))}</li>
+    <li>Languages detected: {html.escape(", ".join(display_locale_codes(summary["languages_detected"])))}</li>
     <li>Total issues: {summary["total_issues"]}</li>
     <li>Critical issues: {summary["critical_issues"]}</li>
     <li>Warning issues: {summary["warning_issues"]}</li>

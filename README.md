@@ -35,11 +35,34 @@ LocaLint currently supports:
 - CSV localization tables
 - JSON localization dictionaries
 - PO files with common `msgid` / `msgstr` entries
+- common locale codes and variants such as `en`, `en-US`, `pt-BR`, `zh-TW`, and `en_US`
 - Streamlit web UI
 - command-line usage
 - text, Markdown, JSON, and CSV reports
 
 It is not a native Godot, Unity, or Unreal plugin.
+
+---
+
+## Release Gate
+
+Every scan returns a release gate:
+
+- **PASS**: no critical, warning, or info issues
+- **REVIEW**: warnings or info notes exist, but no critical issues
+- **BLOCK**: critical issues exist
+
+The gate appears in the app, CLI text output, Markdown reports, and JSON reports.
+
+---
+
+## Locale handling
+
+LocaLint keeps original column names for reading files, but normalizes locale labels for display. For example, `en_US` is shown as `en-US`.
+
+It recognizes common language and locale variants, including `pt-BR`, `pt-PT`, `zh-CN`, `zh-TW`, `zh-Hans`, and `zh-Hant`. Obvious CSV metadata columns such as `notes`, `context`, `screenshot`, and `max_length` are not treated as target locales.
+
+Unknown locale codes are left as-is.
 
 ---
 
@@ -115,6 +138,12 @@ Scan JSON:
 python -m localint.cli sample_data/sample.json --source en
 ```
 
+Use a locale variant as source:
+
+```bash
+python -m localint.cli path/to/strings.csv --source en-US
+```
+
 Scan PO:
 
 ```bash
@@ -149,6 +178,36 @@ Fail the command when critical issues are found:
 
 ```bash
 python -m localint.cli sample_data/broken_sample.csv --source en --fail-on-critical
+```
+
+Create a starter config:
+
+```bash
+python -m localint.cli --init-config
+```
+
+Use a config file:
+
+```bash
+python -m localint.cli sample_data/broken_sample.csv --config .localint.toml
+```
+
+Save a baseline of known issues:
+
+```bash
+python -m localint.cli sample_data/broken_sample.csv --source en --write-baseline .localint-baseline.json
+```
+
+Compare against a baseline:
+
+```bash
+python -m localint.cli sample_data/broken_sample.csv --source en --baseline .localint-baseline.json
+```
+
+Fail only on new critical issues:
+
+```bash
+python -m localint.cli sample_data/broken_sample.csv --source en --baseline .localint-baseline.json --fail-on-new-critical
 ```
 
 Show the installed version:
@@ -222,6 +281,7 @@ Critical: 5
 Warning: 3
 Info: 2
 Health score: 23/100
+Release gate: BLOCK
 ```
 
 ---
@@ -258,7 +318,7 @@ python -m pytest
 Current test suite:
 
 ```text
-30 tests
+54 tests
 ```
 
 ---
@@ -312,6 +372,8 @@ It does not currently include:
 - screenshot-based overflow prediction
 - native Godot, Unity, or Unreal plugins
 - hosted file upload or cloud analysis
+
+An inactive GitHub Actions example is available at `docs/github-actions-example.yml`.
 
 ---
 

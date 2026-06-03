@@ -109,6 +109,33 @@ def test_csv_without_key_column_uses_first_column_fallback():
     assert table.shape_warnings == [KEY_FALLBACK_WARNING]
 
 
+def test_csv_metadata_columns_are_not_target_languages():
+    data = b"key,en,tr,notes,screenshot,max_length\nSTART,Start,Basla,Check tone,start.png,20\n"
+
+    table = parse_csv(data, source_name="metadata.csv")
+
+    assert table.languages == ["en", "tr"]
+    assert table.ignored_columns == ["notes", "screenshot", "max_length"]
+    assert any("Ignored metadata columns" in warning for warning in table.shape_warnings)
+
+
+def test_csv_id_column_with_identifier_values_is_metadata():
+    data = b"key,id,en,tr\nSTART,row_1,Start,Basla\n"
+
+    table = parse_csv(data, source_name="metadata-id.csv")
+
+    assert table.languages == ["en", "tr"]
+    assert table.ignored_columns == ["id"]
+
+
+def test_csv_keeps_indonesian_id_when_values_look_like_translations():
+    data = b"key,en,id\nSTART,Start,Mulai\n"
+
+    table = parse_csv(data, source_name="indonesian.csv")
+
+    assert table.languages == ["en", "id"]
+
+
 def test_csv_with_headers_but_no_rows_gets_clear_error():
     with pytest.raises(ParserError, match="headers but no rows"):
         parse_csv(b"key,en,tr\n", source_name="headers_only.csv")
@@ -127,6 +154,29 @@ def test_json_empty_object_gets_clear_error():
 def test_invalid_po_gets_clear_error():
     with pytest.raises(ParserError, match="no usable msgid/msgstr entries"):
         parse_po(b"# comments only\n", source_name="empty.po")
+
+
+def test_po_without_language_metadata_uses_clear_target_locale():
+    table = parse_po(b'msgid "Exit"\nmsgstr "Cikis"\n', source_name="no-language.po")
+
+    assert table.languages == ["source", "target"]
+    assert table.rows[0].translations["target"] == "Cikis"
+
+
+def test_po_language_metadata_sets_target_locale():
+    data = (
+        b'msgid ""\n'
+        b'msgstr ""\n'
+        b'"Language: tr_TR\\n"\n'
+        b"\n"
+        b'msgid "Exit"\n'
+        b'msgstr "Cikis"\n'
+    )
+
+    table = parse_po(data, source_name="language.po")
+
+    assert table.languages == ["source", "tr-TR"]
+    assert table.rows[0].translations["tr-TR"] == "Cikis"
 
 
 def test_unsupported_extension_gets_clear_error():
